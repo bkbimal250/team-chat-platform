@@ -39,3 +39,6 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
+postgres_data/
+redis_data/
+rabbitmq_data/

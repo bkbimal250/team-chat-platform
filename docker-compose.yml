@@ -1,164 +1,47 @@
-x-service: &service
-  build: ./services/organization-service
-  env_file: .env
-  environment:
-    DATABASE_URL: postgresql://organization_app:${DB_PASSWORD}@postgres:5432/organization_db
-    RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
-    DJANGO_SETTINGS_MODULE: config.settings.local
-  networks: [organization]
-  restart: unless-stopped
-
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: organization_db
-      POSTGRES_USER: organization_migrator
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      APP_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-teamchat_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-postgres}
+      POSTGRES_DB: postgres
+    ports: ["127.0.0.1:5432:5432"]
     volumes:
-      - organization-db:/var/lib/postgresql/data
-      - ./services/organization-service/docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
-    ports: ["127.0.0.1:55432:5432"]
-    networks: [organization]
-    restart: unless-stopped
+      - teamchat-postgres:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [teamchat-network]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U organization_migrator -d organization_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 20
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: organization_service
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-      RABBITMQ_DEFAULT_VHOST: organization
-    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
-    volumes: ["organization-broker:/var/lib/rabbitmq"]
-    networks: [organization]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 20
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    ports: ["127.0.0.1:16379:6379"]
-    volumes: ["identity-redis:/data"]
-    networks: [organization]
-    restart: unless-stopped
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: ["teamchat-redis:/data"]
+    networks: [teamchat-network]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
-  identity-db-bootstrap:
-    image: postgres:17-alpine
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      DB_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ./services/identity-service/docker/bootstrap-db.sh:/bootstrap-db.sh:ro
-    command: ["sh", "/bootstrap-db.sh"]
-    networks: [organization]
-    restart: "no"
-    depends_on:
-      postgres: {condition: service_healthy}
-  migrate:
-    <<: *service
-    restart: "no"
-    environment:
-      DATABASE_URL: postgresql://organization_migrator:${DB_PASSWORD}@postgres:5432/organization_db
-      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
-      DJANGO_SETTINGS_MODULE: config.settings.local
-    command: ["python", "manage.py", "migrate", "--noinput"]
-    depends_on:
-      postgres: {condition: service_healthy}
-  organization-service:
-    <<: *service
-    ports: ["127.0.0.1:8000:8000"]
-    depends_on:
-      migrate: {condition: service_completed_successfully}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-teamchat_dev}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change-me-local-rabbitmq}
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
+    volumes: ["teamchat-rabbitmq:/var/lib/rabbitmq"]
+    networks: [teamchat-network]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=3)"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 10
-  outbox-worker:
-    <<: *service
-    command: ["python", "manage.py", "publish_outbox"]
-    depends_on:
-      migrate: {condition: service_completed_successfully}
-      rabbitmq: {condition: service_healthy}
-  identity-migrate:
-    build: ./services/identity-service
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://identity_app:${DB_PASSWORD}@postgres:5432/identity_db
-      REDIS_URL: redis://redis:6379/0
-      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
-      ORGANIZATION_SERVICE_URL: http://organization-service:8000/
-      ACCESS_TOKEN_PRIVATE_KEY_PATH: /run/identity-keys/private.pem
-      ACCESS_TOKEN_PUBLIC_KEY_PATH: /run/identity-keys/public.pem
-    volumes:
-      - ./services/identity-service/.local-keys:/run/identity-keys:ro
-    command: ["alembic", "upgrade", "head"]
-    networks: [organization]
-    restart: "no"
-    depends_on:
-      identity-db-bootstrap: {condition: service_completed_successfully}
-      redis: {condition: service_healthy}
-  identity-service:
-    build: ./services/identity-service
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://identity_app:${DB_PASSWORD}@postgres:5432/identity_db
-      REDIS_URL: redis://redis:6379/0
-      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
-      ORGANIZATION_SERVICE_URL: http://organization-service:8000/
-      ACCESS_TOKEN_PRIVATE_KEY_PATH: /run/identity-keys/private.pem
-      ACCESS_TOKEN_PUBLIC_KEY_PATH: /run/identity-keys/public.pem
-      DEVELOPMENT_OTP_ENABLED: "true"
-    volumes:
-      - ./services/identity-service/.local-keys:/run/identity-keys:ro
-    ports: ["127.0.0.1:8001:8001"]
-    networks: [organization]
-    restart: unless-stopped
-    depends_on:
-      identity-migrate: {condition: service_completed_successfully}
-      organization-service: {condition: service_healthy}
-      redis: {condition: service_healthy}
-      rabbitmq: {condition: service_healthy}
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health/ready', timeout=3)"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-  identity-outbox-worker:
-    build: ./services/identity-service
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://identity_app:${DB_PASSWORD}@postgres:5432/identity_db
-      REDIS_URL: redis://redis:6379/0
-      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
-      ORGANIZATION_SERVICE_URL: http://organization-service:8000/
-      ACCESS_TOKEN_PRIVATE_KEY_PATH: /run/identity-keys/private.pem
-      ACCESS_TOKEN_PUBLIC_KEY_PATH: /run/identity-keys/public.pem
-    volumes:
-      - ./services/identity-service/.local-keys:/run/identity-keys:ro
-    command: ["python", "-m", "app.events.run_worker"]
-    networks: [organization]
-    restart: unless-stopped
-    depends_on:
-      identity-migrate: {condition: service_completed_successfully}
-      rabbitmq: {condition: service_healthy}
-
+      retries: 20
 volumes:
-  organization-db:
-  organization-broker:
-  identity-redis:
+  teamchat-postgres:
+  teamchat-redis:
+  teamchat-rabbitmq:
 networks:
-  organization:
+  teamchat-network:
     driver: bridge
