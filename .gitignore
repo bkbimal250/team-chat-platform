@@ -1,0 +1,41 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+staticfiles/*
+!staticfiles/.gitkeep
+.coverage
+htmlcov/
+services/identity-service/.local-keys/
+
+# Environment files and secrets
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.secret
+*.secrets
+**/.local-keys/
+
+# Python caches and local environments
+.mypy_cache/
+venv/
+
+# JavaScript and build output
+node_modules/
+.next/
+dist/
+build/
+
+# Logs and editor/OS files
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

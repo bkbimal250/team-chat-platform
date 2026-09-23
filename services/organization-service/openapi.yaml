@@ -1,0 +1,2688 @@
+openapi: 3.0.3
+info:
+  title: Organization Service
+  version: 1.0.0
+  description: Phase 1 tenant administration. Production product access is fail-closed
+    pending verified Identity integration. All operations require the documented permission
+    and trusted tenant context. Lists use cursor pagination.
+paths:
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+        Required permission: `none`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/audit-logs/:
+    get:
+      operationId: v1_audit_logs_list
+      description: |2-
+
+        Required permission: `audit.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: resource_type
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditList'
+          description: ''
+  /api/v1/audit-logs/{id}/:
+    get:
+      operationId: v1_audit_logs_retrieve
+      description: |2-
+
+        Required permission: `audit.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this audit log.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audit'
+          description: ''
+  /api/v1/branches/:
+    get:
+      operationId: v1_branches_list
+      description: |2-
+
+        Required permission: `branch.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - DELETED
+          - DISABLED
+        description: |-
+          * `ACTIVE` - Active
+          * `DISABLED` - Disabled
+          * `DELETED` - Deleted
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBranchList'
+          description: ''
+    post:
+      operationId: v1_branches_create
+      description: |2-
+
+        Required permission: `branch.create`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+          description: ''
+  /api/v1/branches/{id}/:
+    get:
+      operationId: v1_branches_retrieve
+      description: |2-
+
+        Required permission: `branch.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+          description: ''
+    patch:
+      operationId: v1_branches_partial_update
+      description: |2-
+
+        Required permission: `branch.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchRequest'
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+          description: ''
+  /api/v1/branches/{id}/lifecycle/:
+    post:
+      operationId: v1_branches_lifecycle_create
+      description: |2-
+
+        Required permission: `branch.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+          description: ''
+  /api/v1/branches/{id}/members/:
+    get:
+      operationId: v1_branches_members_retrieve
+      description: |2-
+
+        Required permission: `branch.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchMembership'
+          description: ''
+    post:
+      operationId: v1_branches_members_create
+      description: |2-
+
+        Required permission: `branch.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchMembershipInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchMembershipInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchMembershipInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchMembership'
+          description: ''
+  /api/v1/branches/{id}/members/{membership_id}/leave/:
+    post:
+      operationId: v1_branches_members_leave_create
+      description: |2-
+
+        Required permission: `branch.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      - in: path
+        name: membership_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchMembership'
+          description: ''
+  /api/v1/branches/{id}/members/{membership_id}/primary/:
+    post:
+      operationId: v1_branches_members_primary_create
+      description: |2-
+
+        Required permission: `branch.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this branch.
+        required: true
+      - in: path
+        name: membership_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchMembership'
+          description: ''
+  /api/v1/invitations/:
+    get:
+      operationId: v1_invitations_list
+      description: |2-
+
+        Required permission: `invitation.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACCEPTED
+          - EXPIRED
+          - PENDING
+          - REVOKED
+        description: |-
+          * `PENDING` - Pending
+          * `ACCEPTED` - Accepted
+          * `EXPIRED` - Expired
+          * `REVOKED` - Revoked
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvitationList'
+          description: ''
+    post:
+      operationId: v1_invitations_create
+      description: |2-
+
+        Required permission: `invitation.create`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/invitations/{id}/:
+    get:
+      operationId: v1_invitations_retrieve
+      description: |2-
+
+        Required permission: `invitation.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this invitation.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/invitations/{id}/accept/:
+    post:
+      operationId: v1_invitations_accept_create
+      description: |2-
+
+        Required permission: `invitation.accept`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this invitation.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/invitations/{id}/revoke/:
+    post:
+      operationId: v1_invitations_revoke_create
+      description: |2-
+
+        Required permission: `invitation.revoke`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this invitation.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/members/:
+    get:
+      operationId: v1_members_list
+      description: |2-
+
+        Required permission: `member.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: query
+        name: branch
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - LEFT
+          - REMOVED
+          - SUSPENDED
+        description: |-
+          * `INVITED` - Invited
+          * `ACTIVE` - Active
+          * `SUSPENDED` - Suspended
+          * `LEFT` - Left
+          * `REMOVED` - Removed
+      - in: query
+        name: team
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMemberList'
+          description: ''
+    post:
+      operationId: v1_members_create
+      description: |2-
+
+        Required permission: `member.create`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MemberRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/members/{id}/:
+    get:
+      operationId: v1_members_retrieve
+      description: |2-
+
+        Required permission: `member.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this member.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+    patch:
+      operationId: v1_members_partial_update
+      description: |2-
+
+        Required permission: `member.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this member.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMemberRequest'
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/members/{id}/lifecycle/:
+    post:
+      operationId: v1_members_lifecycle_create
+      description: |2-
+
+        Required permission: `member.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this member.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/members/{id}/roles/:
+    post:
+      operationId: v1_members_roles_create
+      description: |2-
+
+        Required permission: `role.manage`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this member.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/organizations/current/:
+    get:
+      operationId: v1_organizations_current_retrieve
+      description: |2-
+
+        Required permission: `organization.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+    patch:
+      operationId: v1_organizations_current_partial_update
+      description: |2-
+
+        Required permission: `organization.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationRequest'
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/v1/organizations/current/lifecycle/:
+    post:
+      operationId: v1_organizations_current_lifecycle_create
+      description: |2-
+
+        Required permission: `organization.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/v1/organizations/current/settings/:
+    get:
+      operationId: v1_organizations_current_settings_retrieve
+      description: |2-
+
+        Required permission: `organization.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+          description: ''
+    patch:
+      operationId: v1_organizations_current_settings_partial_update
+      description: |2-
+
+        Required permission: `organization.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingsRequest'
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+          description: ''
+  /api/v1/permissions/:
+    get:
+      operationId: v1_permissions_list
+      description: |2-
+
+        Required permission: `role.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPermissionList'
+          description: ''
+  /api/v1/role-assignments/:
+    get:
+      operationId: v1_role_assignments_list
+      description: |2-
+
+        Required permission: `role.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: member
+        schema:
+          type: string
+          format: uuid
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleAssignmentList'
+          description: ''
+  /api/v1/roles/:
+    get:
+      operationId: v1_roles_list
+      description: |2-
+
+        Required permission: `role.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleList'
+          description: ''
+    post:
+      operationId: v1_roles_create
+      description: |2-
+
+        Required permission: `role.manage`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomRoleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomRoleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomRoleInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/roles/{id}/:
+    get:
+      operationId: v1_roles_retrieve
+      description: |2-
+
+        Required permission: `role.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this role.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/teams/:
+    get:
+      operationId: v1_teams_list
+      description: |2-
+
+        Required permission: `team.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: query
+        name: branch
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - DELETED
+          - DISABLED
+        description: |-
+          * `ACTIVE` - Active
+          * `DISABLED` - Disabled
+          * `DELETED` - Deleted
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTeamList'
+          description: ''
+    post:
+      operationId: v1_teams_create
+      description: |2-
+
+        Required permission: `team.create`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/v1/teams/{id}/:
+    get:
+      operationId: v1_teams_retrieve
+      description: |2-
+
+        Required permission: `team.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    patch:
+      operationId: v1_teams_partial_update
+      description: |2-
+
+        Required permission: `team.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamRequest'
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/v1/teams/{id}/lifecycle/:
+    post:
+      operationId: v1_teams_lifecycle_create
+      description: |2-
+
+        Required permission: `team.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LifecycleInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/v1/teams/{id}/members/:
+    get:
+      operationId: v1_teams_members_retrieve
+      description: |2-
+
+        Required permission: `team.view`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMembership'
+          description: ''
+    post:
+      operationId: v1_teams_members_create
+      description: |2-
+
+        Required permission: `team.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMembershipInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamMembershipInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamMembershipInputRequest'
+        required: true
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMembership'
+          description: ''
+  /api/v1/teams/{id}/members/{membership_id}/leave/:
+    post:
+      operationId: v1_teams_members_leave_create
+      description: |2-
+
+        Required permission: `team.update`. Tenant-scoped identifiers return 404 outside the current organization. Errors use `error.code`, `error.message`, `error.details`, `error.correlation_id`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this team.
+        required: true
+      - in: path
+        name: membership_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      tags:
+      - v1
+      security:
+      - DevelopmentOnly: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMembership'
+          description: ''
+components:
+  schemas:
+    AcceptInvitationInputRequest:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+      required:
+      - member_id
+    Audit:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        actor_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        action:
+          type: string
+          maxLength: 100
+        resource_type:
+          type: string
+          maxLength: 80
+        resource_id:
+          type: string
+          format: uuid
+        metadata: {}
+        ip_address:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          maxLength: 512
+        correlation_id:
+          type: string
+          maxLength: 128
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_member:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - action
+      - correlation_id
+      - created_at
+      - id
+      - organization
+      - resource_id
+      - resource_type
+    Branch:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        code:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        state:
+          type: string
+          nullable: true
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 2
+        postal_code:
+          type: string
+          nullable: true
+          maxLength: 20
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ResourceStatus'
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - code
+      - country
+      - created_at
+      - id
+      - name
+      - organization
+      - status
+      - updated_at
+    BranchMembership:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_primary:
+          type: boolean
+        joined_at:
+          type: string
+          format: date-time
+        left_at:
+          type: string
+          format: date-time
+          nullable: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+        member:
+          type: string
+          format: uuid
+      required:
+      - branch
+      - created_at
+      - id
+      - member
+      - organization
+      - updated_at
+    BranchMembershipInputRequest:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        is_primary:
+          type: boolean
+          default: false
+      required:
+      - member_id
+    BranchRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        state:
+          type: string
+          nullable: true
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 2
+        postal_code:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - code
+      - country
+      - name
+    CustomRoleInputRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        permission_codes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          maxItems: 100
+      required:
+      - name
+      - permission_codes
+    Invitation:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        team_id:
+          type: string
+          format: uuid
+          nullable: true
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        intended_role_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/InvitationStatusEnum'
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        invited_by_member:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        accepted_member:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - accepted_at
+      - accepted_member
+      - created_at
+      - expires_at
+      - id
+      - intended_role_id
+      - invited_by_member
+      - organization
+      - revoked_at
+      - status
+      - updated_at
+    InvitationRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        team_id:
+          type: string
+          format: uuid
+          nullable: true
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        intended_role_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - intended_role_id
+    InvitationStatusEnum:
+      enum:
+      - PENDING
+      - ACCEPTED
+      - EXPIRED
+      - REVOKED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `ACCEPTED` - Accepted
+        * `EXPIRED` - Expired
+        * `REVOKED` - Revoked
+    KindEnum:
+      enum:
+      - OWNER
+      - ADMIN
+      - MANAGER
+      - MEMBER
+      - CUSTOM
+      type: string
+      description: |-
+        * `OWNER` - Owner
+        * `ADMIN` - Admin
+        * `MANAGER` - Manager
+        * `MEMBER` - Member
+        * `CUSTOM` - Custom
+    LifecycleInputRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - status
+    Member:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        display_name:
+          type: string
+          maxLength: 200
+        employee_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        designation:
+          type: string
+          nullable: true
+          maxLength: 100
+        department:
+          type: string
+          nullable: true
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MemberStatusEnum'
+          readOnly: true
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        suspended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        left_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - display_name
+      - id
+      - joined_at
+      - left_at
+      - organization
+      - status
+      - suspended_at
+      - updated_at
+      - user_id
+    MemberRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        employee_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        designation:
+          type: string
+          nullable: true
+          maxLength: 100
+        department:
+          type: string
+          nullable: true
+          maxLength: 100
+      required:
+      - display_name
+    MemberStatusEnum:
+      enum:
+      - INVITED
+      - ACTIVE
+      - SUSPENDED
+      - LEFT
+      - REMOVED
+      type: string
+      description: |-
+        * `INVITED` - Invited
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `LEFT` - Left
+        * `REMOVED` - Removed
+    Organization:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        display_name:
+          type: string
+          maxLength: 200
+        organization_type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationStatusEnum'
+          readOnly: true
+        logo_media_id:
+          type: string
+          format: uuid
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        timezone:
+          type: string
+          maxLength: 64
+        country_code:
+          type: string
+          maxLength: 2
+        suspended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - deleted_at
+      - display_name
+      - id
+      - name
+      - slug
+      - status
+      - suspended_at
+      - updated_at
+    OrganizationStatusEnum:
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - DISABLED
+      - DELETED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `DISABLED` - Disabled
+        * `DELETED` - Deleted
+    OrganizationTypeEnum:
+      enum:
+      - BUSINESS
+      - NONPROFIT
+      - OTHER
+      type: string
+      description: |-
+        * `BUSINESS` - Business
+        * `NONPROFIT` - Nonprofit
+        * `OTHER` - Other
+    PaginatedAuditList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audit'
+    PaginatedBranchList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Branch'
+    PaginatedInvitationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invitation'
+    PaginatedMemberList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+    PaginatedPermissionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+    PaginatedRoleAssignmentList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+    PaginatedRoleList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    PaginatedTeamList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+    PatchedBranchRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        state:
+          type: string
+          nullable: true
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 2
+        postal_code:
+          type: string
+          nullable: true
+          maxLength: 20
+    PatchedMemberRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        employee_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        designation:
+          type: string
+          nullable: true
+          maxLength: 100
+        department:
+          type: string
+          nullable: true
+          maxLength: 100
+    PatchedOrganizationRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        organization_type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        logo_media_id:
+          type: string
+          format: uuid
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        country_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+    PatchedSettingsRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        allow_member_invites:
+          type: boolean
+        allow_group_creation:
+          type: boolean
+        allow_external_chat:
+          type: boolean
+        max_members:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_teams:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        default_timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+    PatchedTeamRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+    Permission:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        code:
+          type: string
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 200
+      required:
+      - code
+      - created_at
+      - description
+      - id
+      - updated_at
+    ResourceStatus:
+      enum:
+      - ACTIVE
+      - DISABLED
+      - DELETED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `DISABLED` - Disabled
+        * `DELETED` - Deleted
+    Role:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        permissions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 80
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - organization
+      - permissions
+      - updated_at
+    RoleAssignment:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        member:
+          type: string
+          format: uuid
+        role:
+          type: string
+          format: uuid
+      required:
+      - created_at
+      - id
+      - member
+      - organization
+      - role
+      - updated_at
+    RoleAssignmentInputRequest:
+      type: object
+      properties:
+        role_id:
+          type: string
+          format: uuid
+        remove:
+          type: boolean
+          default: false
+      required:
+      - role_id
+    Settings:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        allow_member_invites:
+          type: boolean
+        allow_group_creation:
+          type: boolean
+        allow_external_chat:
+          type: boolean
+        max_members:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_teams:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        default_timezone:
+          type: string
+          maxLength: 64
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - organization
+      - updated_at
+    Team:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ResourceStatus'
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        created_by_member:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - created_by_member
+      - id
+      - name
+      - organization
+      - status
+      - updated_at
+    TeamMembership:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/TeamMembershipRoleEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TeamMembershipStatusEnum'
+          readOnly: true
+        joined_at:
+          type: string
+          format: date-time
+        left_at:
+          type: string
+          format: date-time
+          nullable: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        team:
+          type: string
+          format: uuid
+        member:
+          type: string
+          format: uuid
+      required:
+      - created_at
+      - id
+      - member
+      - organization
+      - status
+      - team
+      - updated_at
+    TeamMembershipInputRequest:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        role:
+          allOf:
+          - $ref: '#/components/schemas/TeamMembershipInputRoleEnum'
+          default: MEMBER
+      required:
+      - member_id
+    TeamMembershipInputRoleEnum:
+      enum:
+      - OWNER
+      - ADMIN
+      - MEMBER
+      type: string
+      description: |-
+        * `OWNER` - OWNER
+        * `ADMIN` - ADMIN
+        * `MEMBER` - MEMBER
+    TeamMembershipRoleEnum:
+      enum:
+      - OWNER
+      - ADMIN
+      - MEMBER
+      type: string
+      description: |-
+        * `OWNER` - Owner
+        * `ADMIN` - Admin
+        * `MEMBER` - Member
+    TeamMembershipStatusEnum:
+      enum:
+      - ACTIVE
+      - LEFT
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `LEFT` - Left
+    TeamRequest:
+      type: object
+      description: Reject unknown/read-only input rather than silently accepting tenant/identity
+        spoofing.
+      properties:
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+      required:
+      - name
+    TypeEnum:
+      enum:
+      - STANDARD
+      - DEPARTMENT
+      - PROJECT
+      type: string
+      description: |-
+        * `STANDARD` - Standard
+        * `DEPARTMENT` - Department
+        * `PROJECT` - Project
+  securitySchemes:
+    DevelopmentOnly:
+      type: apiKey
+      in: header
+      name: X-Dev-Member-ID
+      description: Unsafe local-only identity injection. Disabled in production. Uses
+        an ACTIVE database member and current database permissions.
