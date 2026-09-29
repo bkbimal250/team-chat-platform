@@ -1,0 +1,1 @@
+export type RealtimeState="connecting"|"connected"|"reconnecting"|"disconnected"|"error"|"not-configured";export type EventEnvelope<T=unknown>={event_id:string;event_type:string;event_version:string;occurred_at:string;correlation_id:string;producer:string;organization_id?:string;aggregate_id?:string;payload:T};

@@ -10,7 +10,8 @@ from app.main import Base
 
 config = context.config
 config.set_main_option(
-    "sqlalchemy.url", os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    "sqlalchemy.url",
+    os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url")).replace("%", "%%"),
 )
 target_metadata = Base.metadata
 

@@ -1,23 +1,6 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-teamchat_dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-postgres}
-      POSTGRES_DB: postgres
-    ports: ["127.0.0.1:5432:5432"]
-    volumes:
-      - teamchat-postgres:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
-    networks: [teamchat-network]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
   redis:
     image: redis:7-alpine
-    ports: ["127.0.0.1:6379:6379"]
     volumes: ["teamchat-redis:/data"]
     networks: [teamchat-network]
     healthcheck:
@@ -32,16 +15,192 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change-me-local-rabbitmq}
     ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
     volumes: ["teamchat-rabbitmq:/var/lib/rabbitmq"]
-    networks: [teamchat-network]
+    networks: [teamchat-network, backend-network]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 20
+  organization-service:
+    build: ./services/organization-service
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_organization_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-false}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  outbox-worker:
+    build: ./services/organization-service
+    command: ["python", "manage.py", "publish_outbox"]
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_organization_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-false}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  identity-service:
+    build: ./services/identity-service
+    env_file: ./services/identity-service/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_identity_db
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  identity-outbox-worker:
+    build: ./services/identity-service
+    env_file: ./services/identity-service/.env
+    command: ["python", "-m", "app.events.run_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_identity_db
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  notification-service:
+    build: ./services/notification-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_notification_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  notification-api:
+    build: ./services/notification-service
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8006"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_notification_db
+    networks: [teamchat-network]
+  realtime-service:
+    build: ./services/realtime-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      REDIS_URL: redis://redis:6379/0
+      INSTANCE_ID: realtime-1
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  realtime-api:
+    build: ./services/realtime-service
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8007"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [teamchat-network]
+  user-service:
+    build: ./services/user-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_user_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+      IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  user-outbox-worker:
+    build: ./services/user-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_user_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      RABBITMQ_EXCHANGE: organization.events
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  conversation-service:
+    build: ./services/conversation-service
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_conversation_db
+      REDIS_URL: redis://redis:6379/1
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+      ORGANIZATION_SERVICE_URL: http://organization-service:8000
+      USER_SERVICE_URL: http://user-service:8002
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  conversation-outbox-worker:
+    build: ./services/conversation-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_conversation_db
+      REDIS_URL: redis://redis:6379/1
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+      ORGANIZATION_SERVICE_URL: http://organization-service:8000
+      USER_SERVICE_URL: http://user-service:8002
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  messaging-service:
+    build: ./services/messaging-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_message_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  messaging-outbox-worker:
+    build: ./services/messaging-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_message_db
+      RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [teamchat-network]
+  media-service:
+    build: ./services/media-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_media_db
+      MEDIA_JWT_SECRET: ${MEDIA_JWT_SECRET}
+    networks: [teamchat-network]
 volumes:
-  teamchat-postgres:
   teamchat-redis:
   teamchat-rabbitmq:
 networks:
   teamchat-network:
     driver: bridge
+  backend-network:
+    name: team-chat-platform_organization
+    external: true

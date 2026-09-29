@@ -35,6 +35,70 @@
       ],
       "title": "ChangePayload",
       "type": "object"
+    },
+    "MembershipPayload": {
+      "additionalProperties": false,
+      "description": "Authoritative organization membership identity for downstream projections.",
+      "properties": {
+        "resource_id": {
+          "format": "uuid",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "changed_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Changed Fields",
+          "type": "array"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "member_id": {
+          "format": "uuid",
+          "title": "Member Id",
+          "type": "string"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "User Id"
+        },
+        "participant_kind": {
+          "enum": [
+            "HUMAN",
+            "UNLINKED_MEMBER"
+          ],
+          "title": "Participant Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "changed_fields",
+        "member_id",
+        "user_id",
+        "participant_kind"
+      ],
+      "title": "MembershipPayload",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -49,8 +113,11 @@
       "type": "string"
     },
     "event_version": {
-      "const": 1,
       "default": 1,
+      "enum": [
+        1,
+        2
+      ],
       "title": "Event Version",
       "type": "integer"
     },
@@ -87,7 +154,15 @@
       "type": "string"
     },
     "payload": {
-      "$ref": "#/$defs/ChangePayload"
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ChangePayload"
+        },
+        {
+          "$ref": "#/$defs/MembershipPayload"
+        }
+      ],
+      "title": "Payload"
     }
   },
   "required": [

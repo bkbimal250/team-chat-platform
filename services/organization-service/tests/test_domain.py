@@ -51,6 +51,30 @@ def test_member_lifecycle_and_last_owner(context, tenants):
     assert exc.value.machine_code == "LAST_OWNER"
 
 
+def test_member_v2_events_include_authoritative_projection_identity(context):
+    member = create_resource(
+        context, Member, {"display_name": "Employee", "user_id": uuid4()}, "member"
+    )
+    transition(context, Member, member.id, "ACTIVE", "member")
+    transition(context, Member, member.id, "SUSPENDED", "member")
+    transition(context, Member, member.id, "REMOVED", "member")
+
+    events = OutboxEvent.objects.filter(aggregate_id=member.id).order_by("created_at")
+    assert {event.event_type for event in events} >= {
+        "member.created.v2",
+        "member.activated.v2",
+        "member.suspended.v2",
+        "member.removed.v2",
+    }
+    for event in events:
+        assert event.event_version == 2
+        assert event.organization_id == context.organization_id
+        assert event.payload["member_id"] == str(member.id)
+        assert event.payload["user_id"] == str(member.user_id)
+        assert event.payload["participant_kind"] == "HUMAN"
+        assert event.payload["status"]
+
+
 def test_organization_lifecycle(context):
     assert set_organization_status(context, "SUSPENDED").suspended_at
     assert set_organization_status(context, "DISABLED", operator=True).status == "DISABLED"

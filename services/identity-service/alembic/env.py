@@ -22,7 +22,7 @@ def do_run_migrations(connection):
 
 async def run_async_migrations():
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = str(get_settings().database_url)
+    configuration["sqlalchemy.url"] = str(get_settings().DATABASE_URL)
     connectable = async_engine_from_config(configuration, prefix="sqlalchemy.", poolclass=None)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

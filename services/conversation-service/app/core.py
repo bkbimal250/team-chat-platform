@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     cors_allowed_origins: str = ""
     database_pool_size: int = 10
     database_max_overflow: int = 10
+    jwt_public_key: str = ""
+    jwt_algorithm: str = "RS256"
+    jwt_issuer: str = "identity-service"
+    jwt_audience: str = "team-chat-platform"
+
+    @model_validator(mode="after")
+    def production_jwt(self):
+        if self.app_env == "production" and not self.jwt_public_key:
+            raise ValueError("production requires JWT_PUBLIC_KEY")
+        return self
 
     @property
     def cors_origins(self):

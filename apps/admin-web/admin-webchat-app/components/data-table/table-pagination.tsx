@@ -1,0 +1,1 @@
+export function TablePagination({page,total,onPageChange}:{page:number;total:number;onPageChange:(n:number)=>void}){return <div className="mt-4 flex gap-2"><button disabled={page===1} onClick={()=>onPageChange(page-1)}>Previous</button><span>{page} / {total}</span><button disabled={page===total} onClick={()=>onPageChange(page+1)}>Next</button></div>}

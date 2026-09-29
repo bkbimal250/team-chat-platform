@@ -1,3 +1,4 @@
+import app.models  # noqa: F401
 from alembic import op
 from app.db import Base
 

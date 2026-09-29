@@ -45,6 +45,7 @@ class RabbitPublisher:
         envelope = EventEnvelope(
             event_id=event.event_id,
             event_type=event.event_type,
+            event_version=event.event_version,
             occurred_at=event.created_at,
             organization_id=event.organization_id,
             aggregate_id=event.aggregate_id,

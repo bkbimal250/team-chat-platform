@@ -4,7 +4,16 @@ from datetime import datetime
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint, func, select
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    func,
+    select,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -184,6 +193,16 @@ def outbox(session: AsyncSession, user: User, event_type: str) -> None:
 @app.get("/health/live")
 async def live():
     return {"status": "alive"}
+
+
+@app.get("/health/ready")
+async def ready():
+    try:
+        async with sessions() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(503, "service not ready") from None
+    return {"status": "ready"}
 
 
 @app.post("/internal/v1/users/block-check", dependencies=[Depends(internal)])

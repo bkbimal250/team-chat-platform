@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
+import jwt
 from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,13 +26,22 @@ internal_router = APIRouter(prefix="/internal/v1/conversations", tags=["internal
 
 
 async def principal(
-    x_internal_service_token: str = Header(...),
-    x_organization_id: UUID = Header(...),
-    x_member_id: UUID = Header(...),
+    authorization: str = Header(...),
 ):
-    if x_internal_service_token != settings().internal_service_token:
+    if not authorization.startswith("Bearer ") or not settings().jwt_public_key:
         raise DomainError("NOT_AUTHENTICATED", "Authentication is required.", 401)
-    return x_organization_id, x_member_id
+    try:
+        claims = jwt.decode(
+            authorization.removeprefix("Bearer "),
+            settings().jwt_public_key,
+            algorithms=[settings().jwt_algorithm],
+            issuer=settings().jwt_issuer,
+            audience=settings().jwt_audience,
+            options={"require": ["sub", "org", "mid", "exp"]},
+        )
+        return UUID(claims["org"]), UUID(claims["mid"])
+    except (jwt.PyJWTError, KeyError, ValueError) as exc:
+        raise DomainError("NOT_AUTHENTICATED", "Authentication is required.", 401) from exc
 
 
 async def internal_service(x_internal_service_token: str = Header(...)):

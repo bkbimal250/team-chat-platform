@@ -1,5 +1,6 @@
 """Transactional outbox publisher; caller supplies a confirming broker adapter."""
 
+import asyncio
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -21,7 +22,7 @@ async def publish_pending(broker, batch_size: int = 50) -> int:
         ).all()
         for event in events:
             try:
-                await broker.publish(event)  # publish() returns only after publisher confirmation
+                await asyncio.to_thread(broker.publish, event)
                 event.status, event.published_at = "PUBLISHED", datetime.now(UTC)
                 published += 1
             except Exception as exc:

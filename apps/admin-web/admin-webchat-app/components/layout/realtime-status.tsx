@@ -1,0 +1,1 @@
+import { Radio } from "lucide-react";import { RealtimeClient } from "@/lib/realtime/realtime-client";const client=new RealtimeClient();export function RealtimeStatus(){const label=client.state==="not-configured"?"Not configured":"Offline";return <span className="hidden items-center gap-1 text-xs text-slate-500 md:flex"><Radio size={14} className="text-slate-400"/>{label}</span>}

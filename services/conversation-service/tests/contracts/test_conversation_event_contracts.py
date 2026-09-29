@@ -1,4 +1,9 @@
+from types import SimpleNamespace
+
 import pytest
+
+from app.models import CStatus, CType, MRole, MStatus
+from app.services import event
 
 
 @pytest.mark.parametrize(
@@ -73,3 +78,46 @@ def test_close_ownership_and_state_contract_fields_are_explicit():
         "muted_until",
         "notification_level",
     } <= state.keys()
+
+
+@pytest.mark.asyncio
+async def test_human_conversation_member_event_contains_authoritative_identity():
+    class Result:
+        def scalars(self):
+            return self
+
+        def all(self):
+            return [member]
+
+    class Session:
+        def __init__(self):
+            self.added = []
+
+        async def execute(self, _):
+            return Result()
+
+        def add(self, value):
+            self.added.append(value)
+
+    conversation = SimpleNamespace(
+        id="conversation-id",
+        organization_id="organization-id",
+        type=CType.GROUP,
+        status=CStatus.ACTIVE,
+        created_at=None,
+        updated_at=None,
+    )
+    member = SimpleNamespace(
+        member_id="member-id", user_id="user-id", role=MRole.MEMBER, status=MStatus.ACTIVE
+    )
+    session = Session()
+
+    await event(session, "conversation.member_added.v1", conversation, "correlation", member=member)
+
+    payload = session.added[0].payload
+    assert payload["organization_id"] == "organization-id"
+    assert payload["conversation_id"] == "conversation-id"
+    assert payload["member_id"] == "member-id"
+    assert payload["user_id"] == "user-id"
+    assert payload["participant_kind"] == "HUMAN"
+    assert payload["resulting_status"] == MStatus.ACTIVE

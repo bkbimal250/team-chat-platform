@@ -56,6 +56,7 @@ class Settings(BaseSettings):
 
     # Trusted proxy handling (comma separated list of CIDR strings)
     TRUSTED_PROXIES: Optional[str] = Field(None, env="TRUSTED_PROXIES")
+    CORS_ALLOWED_ORIGINS: str = Field("", env="CORS_ALLOWED_ORIGINS")
 
     class Config:
         env_file = ".env"
@@ -78,7 +79,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return []
+        origins = [
+            origin.strip() for origin in self.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()
+        ]
+        return [] if "*" in origins else origins
 
     @property
     def access_token_ttl_seconds(self) -> int:

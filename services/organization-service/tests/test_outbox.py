@@ -19,6 +19,7 @@ def test_publish_confirmed_and_valid_schema(tenants):
     envelope = EventEnvelope(
         event_id=event.event_id,
         event_type=event.event_type,
+        event_version=event.event_version,
         occurred_at=event.created_at,
         aggregate_id=event.aggregate_id,
         organization_id=event.organization_id,

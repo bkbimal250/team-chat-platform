@@ -59,7 +59,7 @@ urlpatterns = [
     path("health/ready", ready),
     path("api/internal/v1/identity-memberships/<uuid:identity_id>/", identity_memberships),
 ]
-if settings.ENVIRONMENT == "local":
+if settings.ENVIRONMENT in {"local", "test"}:
     urlpatterns += [
         path(
             "api/docs/",

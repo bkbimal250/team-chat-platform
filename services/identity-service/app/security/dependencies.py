@@ -30,10 +30,12 @@ async def current_principal(
         raise DomainError("NOT_AUTHENTICATED", "Authentication is required.", 401)
     claims = decode_access_token(credentials.credentials)
     try:
-        session_id, identity_id, device_id = (
+        session_id, identity_id, device_id, organization_id, member_id = (
             UUID(claims["sid"]),
             UUID(claims["sub"]),
             UUID(claims["did"]),
+            UUID(claims["org"]),
+            UUID(claims["mid"]),
         )
     except (ValueError, KeyError) as exc:
         raise DomainError("ACCESS_TOKEN_INVALID", "Authentication is required.", 401) from exc
@@ -46,6 +48,8 @@ async def current_principal(
     ).scalar_one_or_none()
     if session is None or session.status != SessionStatus.ACTIVE:
         raise DomainError("SESSION_REVOKED", "This session is no longer active.", 401)
+    if session.organization_id != organization_id or session.member_id != member_id:
+        raise DomainError("ACCESS_TOKEN_INVALID", "Authentication is required.", 401)
     device = (
         await db.execute(
             select(Device).where(Device.id == device_id, Device.identity_id == identity_id)

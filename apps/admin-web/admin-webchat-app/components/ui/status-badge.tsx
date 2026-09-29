@@ -1,0 +1,3 @@
+import type { Status } from "@/features/dashboard/types";
+const colors: Record<Status,string>={active:"bg-emerald-50 text-emerald-700",online:"bg-emerald-50 text-emerald-700",operational:"bg-emerald-50 text-emerald-700",pending:"bg-amber-50 text-amber-700",away:"bg-amber-50 text-amber-700",degraded:"bg-amber-50 text-amber-700",suspended:"bg-rose-50 text-rose-700",inactive:"bg-slate-100 text-slate-600",offline:"bg-slate-100 text-slate-600",unavailable:"bg-rose-50 text-rose-700",failed:"bg-rose-50 text-rose-700"};
+export function StatusBadge({status}:{status:Status}){return <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${colors[status]}`}>{status}</span>}

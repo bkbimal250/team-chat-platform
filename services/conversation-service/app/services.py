@@ -9,6 +9,7 @@ from app.models import (
     ConversationSettings,
     CStatus,
     CType,
+    MemberProjection,
     MemberState,
     MRole,
     MStatus,
@@ -54,6 +55,7 @@ async def event(
             {
                 "member_id": str(m.member_id),
                 "user_id": str(m.user_id) if m.user_id else None,
+                "participant_kind": "HUMAN" if m.user_id else "UNLINKED_MEMBER",
                 "role": m.role,
                 "status": m.status,
             }
@@ -65,6 +67,7 @@ async def event(
             {
                 "member_id": str(member.member_id),
                 "user_id": str(member.user_id) if member.user_id else None,
+                "participant_kind": "HUMAN" if member.user_id else "UNLINKED_MEMBER",
                 "role": member.role,
                 "resulting_status": member.status,
             }
@@ -132,6 +135,25 @@ class Authorization:
 
 
 class ConversationService:
+    async def member_user_id(self, db, organization_id, member_id):
+        """Resolve a human member from this service's local organization projection."""
+        member = (
+            await db.execute(
+                select(MemberProjection).where(
+                    MemberProjection.organization_id == organization_id,
+                    MemberProjection.member_id == member_id,
+                    MemberProjection.status == "ACTIVE",
+                )
+            )
+        ).scalar_one_or_none()
+        if member is None or member.user_id is None:
+            raise DomainError(
+                "MEMBER_IDENTITY_UNAVAILABLE",
+                "A human user identity is required for conversation membership.",
+                409,
+            )
+        return member.user_id
+
     async def mine(self, db, cid, mid):
         return (
             await db.execute(
@@ -158,6 +180,10 @@ class ConversationService:
         ).scalar_one_or_none()
         if c:
             return c, False
+        member_users = {
+            member_id: await self.member_user_id(db, org, member_id)
+            for member_id in (actor, target)
+        }
         c = Conversation(
             organization_id=org,
             type=CType.DIRECT,
@@ -173,6 +199,7 @@ class ConversationService:
                     conversation_id=c.id,
                     organization_id=org,
                     member_id=m,
+                    user_id=member_users[m],
                     role=MRole.MEMBER,
                     added_by_member_id=actor,
                 )
@@ -201,12 +228,16 @@ class ConversationService:
         db.add(c)
         await db.flush()
         db.add(ConversationSettings(conversation_id=c.id))
+        member_users = {
+            member_id: await self.member_user_id(db, org, member_id) for member_id in ids
+        }
         for m in ids:
             db.add(
                 ConversationMember(
                     conversation_id=c.id,
                     organization_id=org,
                     member_id=m,
+                    user_id=member_users[m],
                     role=MRole.OWNER if m == actor else MRole.MEMBER,
                     added_by_member_id=actor,
                 )
@@ -236,12 +267,17 @@ class ConversationService:
             raise DomainError(
                 "GROUP_MEMBER_LIMIT", "The group member limit would be exceeded.", 422
             )
+        member_users = {
+            member_id: await self.member_user_id(db, c.organization_id, member_id)
+            for member_id in added
+        }
         for m in added:
             db.add(
                 ConversationMember(
                     conversation_id=c.id,
                     organization_id=c.organization_id,
                     member_id=m,
+                    user_id=member_users[m],
                     role=MRole.MEMBER,
                     added_by_member_id=actor,
                 )

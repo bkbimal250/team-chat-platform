@@ -1,0 +1,1 @@
+import { ShieldX } from "lucide-react";export function AccessDenied(){return <div className="rounded-xl border p-8 text-center"><ShieldX className="mx-auto text-slate-500"/><h2 className="mt-3 font-semibold">Access restricted</h2><p className="text-sm text-slate-500">You do not have access to this workspace area.</p></div>}

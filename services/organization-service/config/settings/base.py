@@ -67,8 +67,9 @@ if not database_url:
         name=os.environ["DB_NAME"],
     )
 DATABASES = {"default": dj_database_url.parse(database_url, conn_max_age=60)}
-DATABASES["default"]["OPTIONS"] = {"connect_timeout": 5}
-if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+    DATABASES["default"]["OPTIONS"] = {"connect_timeout": 5}
+if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql" and ENVIRONMENT != "test":
     raise RuntimeError("Organization Service requires PostgreSQL")
 USE_TZ = True
 TIME_ZONE = "UTC"
@@ -83,7 +84,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["common.context.DevelopmentContextAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "common.context.JWTContextAuthentication",
+        "common.context.DevelopmentContextAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["common.authorization.TenantPermission"],
     "DEFAULT_SCHEMA_CLASS": "common.schema.OrganizationAutoSchema",
     "EXCEPTION_HANDLER": "common.exceptions.exception_handler",
@@ -110,6 +114,10 @@ SPECTACULAR_SETTINGS = {
     },
 }
 DEV_CONTEXT_ENABLED = False
+JWT_PUBLIC_KEY = os.environ.get("JWT_PUBLIC_KEY", "")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "RS256")
+JWT_ISSUER = os.getenv("JWT_ISSUER", "identity-service")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "team-chat-platform")
 CORS_ALLOWED_ORIGINS = [x for x in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if x]
 RABBITMQ_URL = os.environ["RABBITMQ_URL"]
 INTERNAL_SERVICE_TOKEN = os.environ.get("INTERNAL_SERVICE_TOKEN", "")

@@ -56,7 +56,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
             algorithms=[_ALGORITHM],
             audience="team-chat-platform",
             issuer=settings.SERVICE_NAME,
-            options={"require": ["sub", "sid", "did", "exp", "iat"]},
+            options={"require": ["sub", "sid", "did", "org", "mid", "exp", "iat"]},
         )
         return claims
     except Exception as exc:

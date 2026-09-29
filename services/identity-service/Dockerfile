@@ -12,4 +12,4 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --chown=identity:identity . .
 USER identity
 EXPOSE 8001
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--proxy-headers", "false"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

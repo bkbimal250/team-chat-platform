@@ -10,7 +10,7 @@ from common.authorization import require
 from common.exceptions import DomainError
 from common.selectors import tenant_get
 from events.outbox.models import OutboxEvent
-from events.schemas import EVENT_TYPES, ChangePayload
+from events.schemas import EVENT_TYPES, ChangePayload, MembershipPayload
 
 
 def command(function):
@@ -84,13 +84,24 @@ def validate_relations(context, instance):
 
 
 def record(context, instance, aggregate: str, action: str, fields=()):
-    event_type = f"{aggregate}.{action}.v1"
+    version = 2 if aggregate == "member" else 1
+    event_type = f"{aggregate}.{action}.v{version}"
     if event_type not in EVENT_TYPES:
         raise ValueError(f"Unregistered event: {event_type}")
-    payload = ChangePayload(
+    payload_type = MembershipPayload if aggregate == "member" else ChangePayload
+    payload = payload_type(
         resource_id=instance.id,
         changed_fields=sorted(fields),
         status=getattr(instance, "status", None),
+        **(
+            {
+                "member_id": instance.id,
+                "user_id": instance.user_id,
+                "participant_kind": "HUMAN" if instance.user_id else "UNLINKED_MEMBER",
+            }
+            if aggregate == "member"
+            else {}
+        ),
     )
     AuditLog.objects.create(
         organization_id=context.organization_id,
@@ -106,6 +117,7 @@ def record(context, instance, aggregate: str, action: str, fields=()):
     )
     OutboxEvent.objects.create(
         event_type=event_type,
+        event_version=version,
         aggregate_type=aggregate,
         aggregate_id=instance.id,
         organization_id=context.organization_id,
