@@ -74,13 +74,21 @@ resource "aws_ecs_task_definition" "process" {
   }
 
   container_definitions = jsonencode([{
-    name         = each.key
-    image        = local.step10a_images[each.value.service]
-    essential    = true
-    command      = split(" ", each.value.command)
-    stopTimeout  = 60
-    environment  = [for name, value in each.value.environment : { name = name, value = value }]
-    secrets      = [for name, value_from in each.value.secrets : { name = name, valueFrom = value_from }]
+    name        = each.key
+    image       = local.step10a_images[each.value.service]
+    essential   = true
+    command     = split(" ", each.value.command)
+    stopTimeout = 60
+    environment = [for name, value in each.value.environment : { name = name, value = value }]
+    secrets = [
+      for name, value_from in each.value.secrets :
+      { name = name, valueFrom = value_from }
+      if !(
+        each.value.service == "notification" &&
+        contains(["consumer", "outbox"], each.value.name) &&
+        name == "FIREBASE_CREDENTIALS_JSON"
+      )
+    ]
     portMappings = each.value.port == null ? [] : [{ containerPort = each.value.port, protocol = "tcp" }]
     logConfiguration = {
       logDriver = "awslogs"
@@ -129,6 +137,7 @@ resource "aws_ecs_task_definition" "migration" {
     secrets = [
       for name, value_from in local.service_configuration[each.key].secrets :
       { name = name, valueFrom = value_from }
+      if !(each.key == "notification" && name == "FIREBASE_CREDENTIALS_JSON")
     ]
     logConfiguration = {
       logDriver = "awslogs"
