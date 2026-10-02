@@ -136,6 +136,24 @@ locals {
       processes     = { api = "uvicorn app.main:app --host 0.0.0.0 --port 8006", consumer = "python -m app.consumer_runner", delivery_worker = "python -m app.delivery_worker" }
       health        = { live = "/health/live", ready = "/health/ready", dependencies = "postgresql" }
     }
+    gateway = {
+      port          = 8008
+      task_role_arn = null
+      environment = {
+        APP_ENV              = "production"
+        ORGANIZATION_URL     = local.internal_urls.organization
+        IDENTITY_URL         = local.internal_urls.identity
+        USER_URL             = local.internal_urls.user
+        CONVERSATION_URL     = local.internal_urls.conversation
+        MESSAGING_URL        = local.internal_urls.messaging
+        MEDIA_URL            = local.internal_urls.media
+        NOTIFICATION_URL     = local.internal_urls.notification
+        CORS_ALLOWED_ORIGINS = local.trusted_web_origins
+      }
+      secrets   = {}
+      processes = { api = "uvicorn app.main:app --host 0.0.0.0 --port 8008" }
+      health    = { live = "/health/live", ready = "/health/ready", dependencies = "none" }
+    }
   }
 
   process_definitions = {
@@ -162,6 +180,7 @@ locals {
     notification-consumer = { service = "notification", name = "consumer", command = local.service_configuration.notification.processes.consumer, port = null, cpu = 256, memory = 512, database = true, valkey = false, rabbitmq = true, s3 = false, health = "essential-process", cloud_map = false, alb = null }
     notification-delivery = { service = "notification", name = "delivery-worker", command = local.service_configuration.notification.processes.delivery_worker, port = null, cpu = 256, memory = 512, database = true, valkey = false, rabbitmq = false, s3 = false, health = "essential-process", cloud_map = false, alb = null }
     notification-outbox   = { service = "notification", name = "outbox", command = "python -m app.outbox_runner", port = null, cpu = 256, memory = 512, database = true, valkey = false, rabbitmq = true, s3 = false, health = "essential-process", cloud_map = false, alb = null }
+    gateway-api           = { service = "gateway", name = "api", command = local.service_configuration.gateway.processes.api, port = 8008, cpu = 256, memory = 512, database = false, valkey = false, rabbitmq = false, s3 = false, health = "http:/health/live,/health/ready", cloud_map = false, alb = "api-future" }
   }
 
   deployment_processes = {

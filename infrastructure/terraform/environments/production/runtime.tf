@@ -8,6 +8,7 @@ locals {
     "realtime",
     "media",
     "notification",
+    "gateway",
   ])
 
   ecr_lifecycle_policy = jsonencode({

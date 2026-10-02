@@ -1,1 +1,11 @@
-export const serviceConfig={organization:process.env.NEXT_PUBLIC_ORGANIZATION_API_URL,identity:process.env.NEXT_PUBLIC_IDENTITY_API_URL,user:process.env.NEXT_PUBLIC_USER_API_URL,conversation:process.env.NEXT_PUBLIC_CONVERSATION_API_URL,messaging:process.env.NEXT_PUBLIC_MESSAGING_API_URL,media:process.env.NEXT_PUBLIC_MEDIA_API_URL,notification:process.env.NEXT_PUBLIC_NOTIFICATION_API_URL} as const;
+const publicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+export const serviceConfig = {
+  organization: publicApiBaseUrl,
+  identity: publicApiBaseUrl,
+  user: publicApiBaseUrl,
+  conversation: publicApiBaseUrl,
+  messaging: publicApiBaseUrl,
+  media: publicApiBaseUrl,
+  notification: publicApiBaseUrl,
+} as const;
