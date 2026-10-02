@@ -6,21 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.errors import DomainError
+from app.integrations.otp_provider import OTPProvider
 from app.models.models import OTPChallenge, OTPStatus
 from app.security.hashing import hash_secret, verify_secret
 from app.security.phone import normalize_phone
 from app.services.audit import audit_and_event
 from app.services.rate_limit import RateLimiter
-
-
-class OTPProvider:
-    async def send_otp(self, phone: str, code: str) -> None:
-        raise NotImplementedError
-
-
-class DevelopmentOTPProvider(OTPProvider):
-    async def send_otp(self, phone: str, code: str) -> None:
-        return None  # returned only from explicitly enabled local API behavior
 
 
 class OTPService:

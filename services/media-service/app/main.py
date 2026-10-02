@@ -5,7 +5,8 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.config import MediaPolicy, MediaSettings, get_settings
-from app.db import engine
+from app.db import SessionLocal, engine
+from app.durable import DurableMediaService
 from app.schemas import MultipartCompleteRequest, MultipartPartsRequest, UploadRequest
 from app.security import Principal, get_principal
 from app.service import MediaService
@@ -24,7 +25,10 @@ def build_media_service(settings: MediaSettings | None = None) -> MediaService:
     else:
         storage = FakePrivateStorage()
         bucket = settings.media_s3_bucket or "team-chat-platform-private"
-    return MediaService(storage, MediaPolicy(bucket=bucket))
+    policy = MediaPolicy(bucket=bucket)
+    if settings.app_env == "production":
+        return DurableMediaService(storage, policy, SessionLocal)
+    return MediaService(storage, policy)
 
 
 @asynccontextmanager
@@ -52,8 +56,20 @@ async def live():
 
 @app.get("/health/ready", tags=["health"])
 async def ready():
-    if await service().storage.ready():
-        return {"status": "ready", "storage": "available"}
+    from sqlalchemy import text
+
+    try:
+        if isinstance(service(), DurableMediaService):
+            async with SessionLocal() as session:
+                await session.execute(text("SELECT 1"))
+        storage_ready = await service().storage.ready()
+    except Exception:
+        storage_ready = False
+    if storage_ready:
+        response = {"status": "ready", "storage": "available"}
+        if isinstance(service(), DurableMediaService):
+            response["database"] = "available"
+        return response
     return JSONResponse(status_code=503, content={"status": "not_ready", "storage": "unavailable"})
 
 

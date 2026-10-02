@@ -92,4 +92,5 @@ class OrganizationStorageUsage(Base):
     organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
     stored_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     media_count: Mapped[int] = mapped_column(Integer, default=0)
+    reserved_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

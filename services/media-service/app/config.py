@@ -3,12 +3,14 @@ from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class MediaSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: Literal["development", "test", "staging", "production"] = "development"
+    database_url: str = "postgresql+asyncpg://localhost/teamchat_media_db"
     media_storage_backend: Literal["fake", "s3"] = "fake"
     aws_region: str | None = None
     media_s3_bucket: str | None = None
@@ -24,6 +26,14 @@ class MediaSettings(BaseSettings):
             raise ValueError("production requires MEDIA_STORAGE_BACKEND=s3")
         if self.app_env == "production" and not self.jwt_public_key:
             raise ValueError("production requires JWT_PUBLIC_KEY")
+        if self.app_env == "production":
+            database = make_url(self.database_url)
+            if database.get_backend_name() != "postgresql" or database.host in {
+                None,
+                "localhost",
+                "127.0.0.1",
+            }:
+                raise ValueError("production requires a non-local PostgreSQL DATABASE_URL")
         if self.media_storage_backend == "s3":
             if not self.aws_region:
                 raise ValueError("MEDIA_STORAGE_BACKEND=s3 requires AWS_REGION")

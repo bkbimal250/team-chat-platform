@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.core.errors import DomainError
 from app.db.session import get_session
 from app.integrations.organization_service import OrganizationServiceClient
+from app.integrations.otp_provider import DevelopmentOTPProvider, HiliteSMSOTPProvider
 from app.models.models import Identity, IdentityStatus, Session, SessionStatus
 from app.schemas.api import (
     ContextRequest,
@@ -25,7 +26,7 @@ from app.schemas.api import (
 )
 from app.security.dependencies import Principal, current_principal
 from app.services.audit import audit_and_event
-from app.services.otp_service import DevelopmentOTPProvider, OTPService
+from app.services.otp_service import OTPService
 from app.services.qr_service import QRService
 from app.services.rate_limit import RateLimiter
 from app.services.session_service import SessionService
@@ -43,7 +44,23 @@ def context(request: Request) -> tuple[str, str]:
 
 
 def otp_service(request: Request) -> OTPService:
-    return OTPService(DevelopmentOTPProvider(), RateLimiter(request.app.state.redis))
+    settings = get_settings()
+    if settings.OTP_PROVIDER == "development":
+        provider = DevelopmentOTPProvider()
+    elif settings.OTP_PROVIDER == "sms" and settings.SMS_PROVIDER == "hilite_http":
+        provider = HiliteSMSOTPProvider(
+            base_url=str(settings.SMS_API_BASE_URL),
+            username=settings.SMS_USERNAME or "",
+            api_key=settings.SMS_API_KEY or "",
+            route=settings.SMS_ROUTE or "",
+            sender_id=settings.SMS_SENDER_ID or "",
+            template_id=settings.SMS_TEMPLATE_ID or "",
+            message_template=settings.SMS_MESSAGE_TEMPLATE or "",
+            timeout_seconds=settings.SMS_TIMEOUT_SECONDS,
+        )
+    else:
+        raise RuntimeError("OTP provider is not configured")
+    return OTPService(provider, RateLimiter(request.app.state.redis))
 
 
 @router.post("/otp/request", response_model=OTPRequestResponse, status_code=202)

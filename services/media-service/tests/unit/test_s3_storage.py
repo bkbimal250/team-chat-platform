@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.config import MediaSettings
+from app.durable import DurableMediaService
 from app.main import app, build_media_service
 from app.schemas import UploadRequest
 from app.security import Principal
@@ -53,6 +54,7 @@ class S3Client:
 
 def s3_settings():
     return MediaSettings(
+        database_url="postgresql+asyncpg://media:test@database.internal/media",
         app_env="production",
         media_storage_backend="s3",
         aws_region="ap-south-1",
@@ -89,6 +91,7 @@ def test_s3_backend_is_selected_without_static_credentials(monkeypatch):
 
     monkeypatch.setattr("app.storage.boto3.client", create_client)
     service = build_media_service(s3_settings())
+    assert isinstance(service, DurableMediaService)
     assert isinstance(service.storage, S3PrivateStorage)
     assert service.policy.bucket == "globalchat-private"
     assert calls == [(("s3",), {"region_name": "ap-south-1", "endpoint_url": None})]

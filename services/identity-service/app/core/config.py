@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from pydantic import AnyUrl, Field, PostgresDsn, RedisDsn
+from pydantic import AnyHttpUrl, AnyUrl, Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -29,7 +29,16 @@ class Settings(BaseSettings):
     OTP_TTL: int = Field(300, env="OTP_TTL")  # seconds (5m)
     OTP_MAX_ATTEMPTS: int = Field(5, env="OTP_MAX_ATTEMPTS")
     OTP_RESEND_COOLDOWN: int = Field(60, env="OTP_RESEND_COOLDOWN")  # seconds
-    OTP_PROVIDER: Literal["dev", "sms"] = Field("dev", env="OTP_PROVIDER")
+    OTP_PROVIDER: Literal["development", "sms"] = Field("development", env="OTP_PROVIDER")
+    SMS_PROVIDER: Literal["hilite_http"] | None = Field(None, env="SMS_PROVIDER")
+    SMS_API_BASE_URL: AnyHttpUrl | None = Field(None, env="SMS_API_BASE_URL")
+    SMS_USERNAME: str | None = Field(None, env="SMS_USERNAME")
+    SMS_API_KEY: str | None = Field(None, env="SMS_API_KEY")
+    SMS_ROUTE: str | None = Field(None, env="SMS_ROUTE")
+    SMS_SENDER_ID: str | None = Field(None, env="SMS_SENDER_ID")
+    SMS_TEMPLATE_ID: str | None = Field(None, env="SMS_TEMPLATE_ID")
+    SMS_MESSAGE_TEMPLATE: str | None = Field(None, env="SMS_MESSAGE_TEMPLATE")
+    SMS_TIMEOUT_SECONDS: float = Field(5.0, gt=0, le=30, env="SMS_TIMEOUT_SECONDS")
 
     # QR login settings
     QR_CHALLENGE_TTL: int = Field(120, env="QR_CHALLENGE_TTL")  # seconds (2m)
@@ -61,6 +70,26 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+    @model_validator(mode="after")
+    def validate_otp_provider(self):
+        if self.APP_ENV == "production" and self.OTP_PROVIDER != "sms":
+            raise ValueError("production requires OTP_PROVIDER=sms")
+        if self.OTP_PROVIDER == "sms":
+            required = {
+                "SMS_PROVIDER": self.SMS_PROVIDER,
+                "SMS_API_BASE_URL": self.SMS_API_BASE_URL,
+                "SMS_USERNAME": self.SMS_USERNAME,
+                "SMS_API_KEY": self.SMS_API_KEY,
+                "SMS_ROUTE": self.SMS_ROUTE,
+                "SMS_SENDER_ID": self.SMS_SENDER_ID,
+                "SMS_TEMPLATE_ID": self.SMS_TEMPLATE_ID,
+                "SMS_MESSAGE_TEMPLATE": self.SMS_MESSAGE_TEMPLATE,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise ValueError(f"SMS delivery configuration missing: {', '.join(missing)}")
+        return self
 
     # The API layer uses lower-case names while the original settings contract
     # uses environment-style names. Keep a single source of truth during the
@@ -97,6 +126,10 @@ class Settings(BaseSettings):
         return self.OTP_TTL
 
     @property
+    def otp_max_attempts(self) -> int:
+        return self.OTP_MAX_ATTEMPTS
+
+    @property
     def otp_resend_cooldown_seconds(self) -> int:
         return self.OTP_RESEND_COOLDOWN
 
@@ -106,7 +139,7 @@ class Settings(BaseSettings):
 
     @property
     def development_otp_enabled(self) -> bool:
-        return self.OTP_PROVIDER == "dev"
+        return self.OTP_PROVIDER == "development"
 
     @property
     def internal_service_token(self) -> str:

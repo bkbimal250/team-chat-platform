@@ -112,9 +112,18 @@ class ProcessedEvent(Base):
     )
 
 
-engine = create_async_engine(
-    os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres@127.0.0.1/teamchat_user_db")
-)
+database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres@127.0.0.1/teamchat_user_db")
+if os.getenv("APP_ENV", "development") == "production":
+    from sqlalchemy.engine import make_url
+
+    parsed_database = make_url(database_url)
+    if parsed_database.get_backend_name() != "postgresql" or parsed_database.host in {
+        None,
+        "localhost",
+        "127.0.0.1",
+    }:
+        raise RuntimeError("production requires a non-local PostgreSQL DATABASE_URL")
+engine = create_async_engine(database_url)
 sessions = async_sessionmaker(engine, expire_on_commit=False)
 app = FastAPI(title="User Service", version="1.0.0")
 

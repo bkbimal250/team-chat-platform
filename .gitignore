@@ -42,3 +42,20 @@ Thumbs.db
 postgres_data/
 redis_data/
 rabbitmq_data/
+
+# Terraform generated and private files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+*.tfvars
+!*.tfvars.example
+infrastructure/terraform/**/provider-schema*.json
+infrastructure/terraform/**/*-plan.json
+infrastructure/terraform/**/*-autopilot.json
+infrastructure/terraform/**/*-task-arn.txt
+
+# Flutter/Dart local tooling
+devtools_options.yaml
