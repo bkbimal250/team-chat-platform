@@ -31,6 +31,9 @@ class JsonFormatter(logging.Formatter):
             "duration_ms",
             "event_id",
             "error_type",
+            "provider_host",
+            "provider_status",
+            "provider_category",
         ):
             if hasattr(record, field):
                 data[field] = str(getattr(record, field))

@@ -107,9 +107,10 @@ def test_sms_provider_is_selected_without_development_fallback(monkeypatch):
 
 
 class FakeResponse:
-    def __init__(self, accepted=True, error=None):
+    def __init__(self, accepted=True, error=None, status_code=200):
         self.accepted = accepted
         self.error = error
+        self.status_code = status_code
 
     def raise_for_status(self):
         if self.error:
@@ -183,6 +184,52 @@ async def test_provider_failures_are_sanitized(monkeypatch, response):
     message = str(captured.value)
     assert "654321" not in message
     assert "secret-api-key" not in message
+    FakeClient.response = FakeResponse()
+
+
+@pytest.mark.asyncio
+async def test_hilite_diagnostics_are_sanitized(monkeypatch, caplog):
+    sensitive_phone = "+919876543210"
+    sensitive_otp = "654321"
+    sensitive_username = "test-user"
+    sensitive_key = "secret-api-key"
+    FakeClient.response = FakeResponse(accepted=False)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    with caplog.at_level(logging.INFO), pytest.raises(DomainError):
+        await provider().send_otp(sensitive_phone, sensitive_otp)
+
+    log_content = "\n".join(f"{record.getMessage()} {record.__dict__}" for record in caplog.records)
+    for value in (sensitive_phone, sensitive_otp, sensitive_username, sensitive_key):
+        assert value not in log_content
+    assert "hilite_sms_request_started" in log_content
+    assert "hilite_sms_response_received" in log_content
+    assert "hilite_sms_response_rejected" in log_content
+    assert "sms.example.test" in log_content
+    assert "provider_error_marker" not in log_content
+    assert any(getattr(record, "provider_category", None) == "error" for record in caplog.records)
+    FakeClient.response = FakeResponse()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "category"),
+    [
+        (httpx.TimeoutException("timeout"), "timeout"),
+        (httpx.ConnectError("connection failed"), "dns_or_connect_failure"),
+        (httpx.RemoteProtocolError("protocol failed"), "http_protocol_failure"),
+    ],
+)
+async def test_hilite_diagnostics_categorize_transport_failures(
+    monkeypatch, caplog, error, category
+):
+    FakeClient.response = FakeResponse(error=error)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    with caplog.at_level(logging.INFO), pytest.raises(DomainError):
+        await provider().send_otp("+919876543210", "654321")
+
+    assert any(getattr(record, "provider_category", None) == category for record in caplog.records)
     FakeClient.response = FakeResponse()
 
 
