@@ -395,16 +395,22 @@ async def search_users(
         raise HTTPException(422, "query must contain at least two characters")
     limit = min(max(limit, 1), 50)
     query = (
-        select(User)
+        select(User, MembershipProjection.member_id)
         .join(MembershipProjection, MembershipProjection.user_id == User.id)
         .where(
             MembershipProjection.organization_id == context.organization_id,
             MembershipProjection.status == "ACTIVE",
+            User.status == "ACTIVE",
             User.display_name.ilike(f"%{q.strip()}%"),
         )
         .limit(limit)
     )
-    return {"users": [projection(item) for item in (await session.scalars(query)).all()]}
+    return {
+        "users": [
+            projection(user) | {"member_id": str(member_id)}
+            for user, member_id in (await session.execute(query)).all()
+        ]
+    }
 
 
 @app.get("/api/v1/users/{user_id}")

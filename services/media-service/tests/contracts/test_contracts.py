@@ -18,7 +18,18 @@ def test_openapi_exposes_private_media_lifecycle_endpoints():
 def test_media_event_envelopes_follow_platform_contract():
     service = MediaService(FakePrivateStorage())
     media = type(
-        "Media", (), {"organization_id": uuid4(), "id": uuid4(), "conversation_id": uuid4()}
+        "Media",
+        (),
+        {
+            "organization_id": uuid4(),
+            "id": uuid4(),
+            "conversation_id": uuid4(),
+            "uploader_member_id": uuid4(),
+            "media_type": "image",
+            "mime_type": "image/png",
+            "safe_filename": "image.png",
+            "size_bytes": 100,
+        },
     )()
     for event_type in ("media.ready.v1", "media.failed.v1", "media.deleted.v1"):
         service._event(event_type, media, "trace-1")

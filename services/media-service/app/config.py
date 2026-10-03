@@ -10,6 +10,7 @@ class MediaSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: Literal["development", "test", "staging", "production"] = "development"
+    conversation_api_url: str = "http://conversation.globalchat.internal:8003"
     database_url: str = "postgresql+asyncpg://localhost/teamchat_media_db"
     media_storage_backend: Literal["fake", "s3"] = "fake"
     aws_region: str | None = None

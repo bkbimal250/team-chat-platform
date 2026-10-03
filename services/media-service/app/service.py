@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 
 from app.config import MediaPolicy
-from app.security import Principal, can_access
+from app.security import Principal, authorize_conversation
 from app.storage import StorageError, expiry
 
 
@@ -59,9 +59,8 @@ class MediaService:
         self.references: set[tuple[UUID, str]] = set()
         self.usage: dict[UUID, dict[str, int]] = {}
 
-    def _authorized(self, principal, conversation_id):
-        if not can_access(principal, conversation_id):
-            raise HTTPException(403, "conversation access denied")
+    async def _authorized(self, principal, conversation_id):
+        await authorize_conversation(principal, conversation_id)
 
     def _validate(self, media_type, mime_type, size_bytes):
         if (
@@ -90,13 +89,18 @@ class MediaService:
                 "payload": {
                     "media_id": str(media.id),
                     "conversation_id": str(media.conversation_id),
+                    "uploader_member_id": str(media.uploader_member_id),
+                    "media_type": media.media_type,
+                    "mime_type": media.mime_type,
+                    "filename": media.safe_filename,
+                    "size_bytes": media.size_bytes,
                 },
                 "status": "PENDING",
             }
         )
 
     async def initiate(self, principal: Principal, request, correlation_id=""):
-        self._authorized(principal, request.conversation_id)
+        await self._authorized(principal, request.conversation_id)
         self._validate(request.media_type, request.mime_type, request.size_bytes)
         if request.size_bytes >= self.policy.multipart_threshold_bytes:
             return await self.initiate_multipart(principal, request, correlation_id)
@@ -144,7 +148,7 @@ class MediaService:
         }
 
     async def initiate_multipart(self, principal: Principal, request, correlation_id=""):
-        self._authorized(principal, request.conversation_id)
+        await self._authorized(principal, request.conversation_id)
         self._validate(request.media_type, request.mime_type, request.size_bytes)
         media_id = uuid4()
         key = (
@@ -201,7 +205,7 @@ class MediaService:
         }
 
     async def multipart_part_urls(self, principal, media_id, part_numbers):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.status != "UPLOADING" or media.upload_strategy != "MULTIPART":
             raise HTTPException(409, "multipart upload is not active")
         if len(part_numbers) > self.policy.multipart_url_batch_limit or len(
@@ -233,7 +237,7 @@ class MediaService:
             raise HTTPException(503, "multipart part URL unavailable") from exc
 
     async def multipart_status(self, principal, media_id):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.upload_strategy != "MULTIPART":
             raise HTTPException(409, "not a multipart upload")
         try:
@@ -263,15 +267,17 @@ class MediaService:
         self._event("media.ready.v1", media, correlation_id)
         return media
 
-    def _owned(self, principal, media_id):
+    async def _owned(self, principal, media_id, require_uploader=True):
         media = self.media.get(media_id)
         if not media or media.organization_id != principal.organization_id:
             raise HTTPException(404, "media not found")
-        self._authorized(principal, media.conversation_id)
+        await self._authorized(principal, media.conversation_id)
+        if require_uploader and media.uploader_member_id != principal.member_id:
+            raise HTTPException(403, "media mutation is restricted to its uploader")
         return media
 
     async def complete(self, principal, media_id, correlation_id=""):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.status == "READY":
             return media
         if media.status not in {"PENDING", "UPLOADING", "UPLOADED"}:
@@ -291,7 +297,7 @@ class MediaService:
         return self._mark_ready(media, correlation_id)
 
     async def complete_multipart(self, principal, media_id, parts, correlation_id=""):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.status == "READY":
             return media
         if media.status != "UPLOADING" or media.upload_strategy != "MULTIPART":
@@ -312,7 +318,7 @@ class MediaService:
         return self._mark_ready(media, correlation_id)
 
     async def abort_multipart(self, principal, media_id, correlation_id=""):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.status in {"FAILED", "DELETED"}:
             return media
         if media.upload_strategy != "MULTIPART":
@@ -332,7 +338,7 @@ class MediaService:
         return media
 
     async def download(self, principal, media_id):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id, require_uploader=False)
         if media.status != "READY" or media.deleted_at:
             raise HTTPException(404, "media unavailable")
         try:
@@ -343,7 +349,7 @@ class MediaService:
             raise HTTPException(503, "download storage unavailable") from exc
 
     async def delete(self, principal, media_id, correlation_id=""):
-        media = self._owned(principal, media_id)
+        media = await self._owned(principal, media_id)
         if media.status == "DELETED":
             return media
         if media.status != "READY":
@@ -367,6 +373,9 @@ class MediaService:
         if event_id in self.processed_events:
             return False
         payload = event["payload"]
+        if not payload.get("media_id"):
+            self.processed_events.add(event_id)
+            return False
         media_id, message_id = UUID(payload["media_id"]), payload["message_id"]
         media = self.media.get(media_id)
         if not media or str(media.organization_id) != event["organization_id"]:

@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -78,3 +78,38 @@ async def patch_preferences(
         if request.notification_preview is not None:
             row.preview = request.notification_preview
         return row
+
+
+@app.get("/api/v1/notifications")
+async def list_notifications(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_db_session),
+):
+    from app.models import Notification
+
+    rows = (
+        await session.scalars(
+            select(Notification)
+            .where(
+                Notification.organization_id == principal.organization_id,
+                Notification.recipient_member_id == principal.member_id,
+                Notification.recipient_user_id == principal.user_id,
+            )
+            .order_by(Notification.id)
+            .offset(offset)
+            .limit(limit)
+        )
+    ).all()
+    return [
+        {
+            "id": str(row.id),
+            "conversation_id": str(row.conversation_id),
+            "message_id": str(row.message_id),
+            "title": row.title,
+            "body": row.body,
+            "preview_mode": row.preview_mode,
+        }
+        for row in rows
+    ]

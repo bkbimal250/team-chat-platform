@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.core import DomainError, settings
 from app.models import (
+    BlockProjection,
     Conversation,
     ConversationMember,
     ConversationSettings,
@@ -170,6 +171,27 @@ class ConversationService:
             raise DomainError(
                 "DIRECT_SELF_NOT_ALLOWED", "A direct conversation requires another member.", 422
             )
+        member_users = {
+            member_id: await self.member_user_id(db, org, member_id)
+            for member_id in (actor, target)
+        }
+        actor_user, target_user = member_users[actor], member_users[target]
+        blocked = await db.scalar(
+            select(BlockProjection.id).where(
+                (
+                    (BlockProjection.blocker_user_id == actor_user)
+                    & (BlockProjection.blocked_user_id == target_user)
+                )
+                | (
+                    (BlockProjection.blocker_user_id == target_user)
+                    & (BlockProjection.blocked_user_id == actor_user)
+                )
+            )
+        )
+        if blocked:
+            raise DomainError(
+                "DIRECT_CONVERSATION_BLOCKED", "Direct messaging is unavailable.", 403
+            )
         key = direct_key(actor, target)
         c = (
             await db.execute(
@@ -180,10 +202,6 @@ class ConversationService:
         ).scalar_one_or_none()
         if c:
             return c, False
-        member_users = {
-            member_id: await self.member_user_id(db, org, member_id)
-            for member_id in (actor, target)
-        }
         c = Conversation(
             organization_id=org,
             type=CType.DIRECT,

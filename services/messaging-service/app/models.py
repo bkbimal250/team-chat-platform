@@ -93,6 +93,7 @@ class Message(Base):
     sender_device_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     type: Mapped[str] = mapped_column(String(20))
     text: Mapped[str | None] = mapped_column(Text)
+    attachment: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     reply_to_message_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("messages.id")
     )
@@ -102,6 +103,16 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class MediaProjection(Base):
+    __tablename__ = "media_projections"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    uploader_member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    status: Mapped[str] = mapped_column(String(20))
+    metadata_json: Mapped[dict] = mapped_column(JSONB)
 
 
 class MessageReaction(Base):

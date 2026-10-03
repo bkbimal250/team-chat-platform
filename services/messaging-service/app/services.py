@@ -10,6 +10,7 @@ from app.models import (
     ConversationProjection,
     ConversationReadState,
     ConversationSequence,
+    MediaProjection,
     Message,
     OutboxEvent,
 )
@@ -80,12 +81,21 @@ def event(message: Message, event_type: str, correlation_id: str, **extra):
         "sender_device_id": str(message.sender_device_id),
         "type": message.type,
         "text": message.text,
+        "attachment": getattr(message, "attachment", None),
+        "media_id": (getattr(message, "attachment", None) or {}).get("media_id"),
         "reply_to_message_id": str(message.reply_to_message_id)
         if message.reply_to_message_id
         else None,
         "client_message_id": str(message.client_message_id),
         "sequence": message.sequence,
         "created_at": message.created_at.isoformat() if message.created_at else None,
+        "version_at": (
+            getattr(message, "deleted_at", None)
+            or getattr(message, "edited_at", None)
+            or message.created_at
+        ).isoformat()
+        if message.created_at
+        else None,
     }
     payload.update(extra)
     return OutboxEvent(
@@ -99,8 +109,9 @@ def event(message: Message, event_type: str, correlation_id: str, **extra):
 
 async def send(db: AsyncSession, p: Principal, conversation_id: UUID, body, correlation_id: str):
     await authorize(db, p, conversation_id)
-    if body.type != "TEXT":
-        raise DomainError("MESSAGE_TYPE_UNSUPPORTED", "Only TEXT messages may be sent.", 400)
+    if body.type not in {"TEXT", "IMAGE", "VIDEO", "AUDIO", "VOICE", "DOCUMENT"}:
+        raise DomainError("MESSAGE_TYPE_UNSUPPORTED", "Message type is unsupported.", 400)
+
     existing = await db.scalar(
         select(Message).where(
             Message.organization_id == p.organization_id,
@@ -122,6 +133,7 @@ async def send(db: AsyncSession, p: Principal, conversation_id: UUID, body, corr
         )
         if not reply:
             raise DomainError("REPLY_INVALID", "Reply target is unavailable.", 400)
+    attachment = await media_attachment(db, p, conversation_id, body)
     counter = await db.scalar(
         select(ConversationSequence)
         .where(ConversationSequence.conversation_id == conversation_id)
@@ -141,6 +153,7 @@ async def send(db: AsyncSession, p: Principal, conversation_id: UUID, body, corr
         sender_device_id=p.device_id,
         type=body.type,
         text=body.text,
+        attachment=attachment,
         reply_to_message_id=body.reply_to_message_id,
         client_message_id=body.client_message_id,
         sequence=sequence,
@@ -190,3 +203,24 @@ async def mark(db, p, conversation_id, sequence, read, correlation_id):
         )
     )
     return state
+
+
+async def media_attachment(db, p, conversation_id, body):
+    if body.type == "TEXT":
+        return None
+    media = await db.get(MediaProjection, body.media_id)
+    if (
+        not media
+        or media.organization_id != p.organization_id
+        or media.conversation_id != conversation_id
+        or media.uploader_member_id != p.member_id
+    ):
+        raise DomainError(
+            "MEDIA_UNAVAILABLE", "Attachment is unavailable for this conversation.", 403
+        )
+    if media.status != "READY":
+        raise DomainError("MEDIA_NOT_READY", "Attachment is not ready. Try again shortly.", 409)
+    expected = "audio" if body.type == "VOICE" else body.type.lower()
+    if media.metadata_json["media_type"] != expected:
+        raise DomainError("MEDIA_TYPE_MISMATCH", "Attachment type does not match.", 422)
+    return {"media_id": str(media.id), **media.metadata_json}

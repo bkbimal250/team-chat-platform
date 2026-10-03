@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat_projection import summaries
 from app.core import DomainError, settings
 from app.db import db
 from app.models import (
@@ -133,7 +134,9 @@ async def list_conversations(
         q = q.where(MemberState.is_archived == archived)
     if pinned is not None:
         q = q.where(MemberState.is_pinned == pinned)
-    return [out(c, m, s, count) for c, m, s, count in (await session.execute(q)).all()]
+    rows = (await session.execute(q)).all()
+    summary = await summaries(session, org, mid, [c.id for c, _, _, _ in rows])
+    return [out(c, m, s, count) | summary[c.id] for c, m, s, count in rows]
 
 
 @router.get("/{cid}")

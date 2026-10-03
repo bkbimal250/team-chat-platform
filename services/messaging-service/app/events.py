@@ -12,6 +12,7 @@ from app.models import (
     BlockProjection,
     ConversationMemberProjection,
     ConversationProjection,
+    MediaProjection,
     OutboxEvent,
     ProcessedEvent,
 )
@@ -23,7 +24,50 @@ async def apply_projection(db, envelope: dict) -> bool:
         return False
     payload, event_type = envelope["payload"], envelope["event_type"]
     organization_id = UUID(str(envelope["organization_id"]))
-    if event_type == "user.blocked.v1":
+    if event_type.startswith("media."):
+        # Old ready events did not carry authorization metadata. Never authorize from them.
+        if "uploader_member_id" not in payload:
+            existing = await db.get(MediaProjection, UUID(payload["media_id"]))
+            if (
+                existing
+                and existing.organization_id == organization_id
+                and event_type != "media.ready.v1"
+            ):
+                existing.status = "DELETED" if event_type == "media.deleted.v1" else "FAILED"
+            db.add(
+                ProcessedEvent(
+                    event_id=event_id, event_type=event_type, producer=envelope["producer"]
+                )
+            )
+            return True
+        media_id = UUID(payload["media_id"])
+        row = await db.get(MediaProjection, media_id)
+        if row and row.organization_id != organization_id:
+            raise ValueError("Media tenant mismatch")
+        if row is None:
+            row = MediaProjection(
+                id=media_id,
+                organization_id=organization_id,
+                conversation_id=UUID(payload["conversation_id"]),
+                uploader_member_id=UUID(payload["uploader_member_id"]),
+                status="PENDING",
+                metadata_json={},
+            )
+            db.add(row)
+        if row.conversation_id != UUID(
+            payload["conversation_id"]
+        ) or row.uploader_member_id != UUID(payload["uploader_member_id"]):
+            raise ValueError("Media identity mismatch")
+        if row.status not in {"DELETED", "FAILED"}:
+            row.status = {
+                "media.ready.v1": "READY",
+                "media.deleted.v1": "DELETED",
+                "media.failed.v1": "FAILED",
+            }.get(event_type, row.status)
+            row.metadata_json = {
+                key: payload[key] for key in ("media_type", "mime_type", "filename", "size_bytes")
+            }
+    elif event_type == "user.blocked.v1":
         db.add(
             BlockProjection(
                 blocker_user_id=UUID(str(payload["blocker_user_id"])),

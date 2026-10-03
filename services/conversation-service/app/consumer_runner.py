@@ -32,6 +32,23 @@ def main() -> None:
     channel.queue_declare("conversation.membership", durable=True)
     for key in ("member.#", "organization.#"):
         channel.queue_bind("conversation.membership", "organization.events", key)
+    for exchange, keys in (
+        (
+            "messaging.events",
+            (
+                "message.created.v1",
+                "message.edited.v1",
+                "message.deleted.v1",
+                "message.read.v1",
+                "conversation.summary.message.v1",
+                "conversation.summary.read.v1",
+            ),
+        ),
+        ("user.events", ("user.blocked.v1", "user.unblocked.v1")),
+    ):
+        channel.exchange_declare(exchange, "topic", durable=True)
+        for key in keys:
+            channel.queue_bind("conversation.membership", exchange, key)
     channel.basic_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
     channel.basic_consume("conversation.membership", callback, auto_ack=False)
     for event in (signal.SIGTERM, signal.SIGINT):

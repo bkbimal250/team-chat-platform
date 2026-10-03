@@ -16,6 +16,9 @@ def main() -> None:
     channel.queue_declare("messaging.authorization", durable=True)
     for key in ("conversation.#", "member.#", "block.#"):
         channel.queue_bind("messaging.authorization", "organization.events", key)
+    channel.exchange_declare("media.events", "topic", durable=True)
+    for key in ("media.ready.v1", "media.deleted.v1", "media.failed.v1"):
+        channel.queue_bind("messaging.authorization", "media.events", key)
     channel.basic_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
     channel.basic_consume("messaging.authorization", consumer_callback, auto_ack=False)
     for event in (signal.SIGTERM, signal.SIGINT):

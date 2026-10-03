@@ -13,6 +13,7 @@ from app.authorization import ConversationAuthorizer
 from app.core import ProtocolError, settings
 from app.registry import RedisMetadataRegistry, Registry
 from app.runtime import Runtime
+from app.typing import TypingBroadcaster
 
 app = FastAPI(title="realtime-service")
 # This is always local socket ownership. Production startup attaches shared Redis metadata.
@@ -22,6 +23,7 @@ accepting_connections = True
 runtime = Runtime()
 delivery_task: asyncio.Task | None = None
 redis_pubsub = None
+typing_broadcaster = TypingBroadcaster(registry, lambda p, cid: authorizer.authorize(p, cid))
 
 
 def build_production_registry(redis_client: Redis, instance_id: str | None = None) -> Registry:
@@ -49,7 +51,16 @@ async def _deliver_remote(payload: dict):
         return
     if metadata and not await metadata.claim_delivery(payload.get("delivery_id", "")):
         return
-    await registry.enqueue(connection, payload["event"])
+    frame = payload["event"]
+    if frame.get("type") == "typing.updated.v1":
+        cid = UUID(frame["payload"]["conversation_id"])
+        if cid not in connection.subscriptions:
+            return
+        try:
+            await authorizer.authorize(connection.principal, cid)
+        except ProtocolError:
+            return
+    await registry.enqueue(connection, frame)
 
 
 async def _listen_for_deliveries(pubsub):
@@ -66,7 +77,7 @@ async def _listen_for_deliveries(pubsub):
 @app.on_event("startup")
 async def startup():
     """Production requires Redis; development/test may use the local-only registry explicitly."""
-    global registry, runtime, delivery_task, redis_pubsub, accepting_connections
+    global registry, runtime, delivery_task, redis_pubsub, accepting_connections, typing_broadcaster
     configured = settings()
     accepting_connections = True
     if not configured.redis_url:
@@ -82,6 +93,7 @@ async def startup():
             raise
         return
     registry = build_production_registry(client)
+    typing_broadcaster = TypingBroadcaster(registry, lambda p, cid: authorizer.authorize(p, cid))
     runtime = Runtime(redis_client=client, metadata_registry=registry.metadata_registry)
     redis_pubsub = client.pubsub()
     await redis_pubsub.subscribe(f"realtime:instance:{configured.instance_id}:deliveries")
@@ -133,7 +145,8 @@ async def client_event(connection, frame: dict):
         await authorizer.authorize(connection.principal, conversation_id)
         if conversation_id not in connection.subscriptions:
             raise ProtocolError("CONVERSATION_FORBIDDEN", "Conversation is not subscribed.")
-        await registry.set_typing(connection, conversation_id, event_type == "typing.start")
+        typing_broadcaster.registry = registry
+        await typing_broadcaster.update(connection, conversation_id, event_type == "typing.start")
         return {"version": 1, "type": event_type + ".ok"}
     if event_type == "presence.heartbeat":
         await registry.refresh(connection)
@@ -168,6 +181,7 @@ async def realtime(websocket: WebSocket):
         await websocket.close(code=1008)
     finally:
         sender_task.cancel()
+        await typing_broadcaster.remove(connection)
         await registry.remove(connection.id)
 
 
@@ -175,6 +189,7 @@ async def realtime(websocket: WebSocket):
 async def shutdown():
     global accepting_connections, delivery_task, redis_pubsub
     accepting_connections = False
+    await typing_broadcaster.close()
     for connection in list(registry.connections.values()):
         await registry.remove(connection.id)
     if delivery_task:

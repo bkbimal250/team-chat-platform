@@ -5,6 +5,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat_projection import project_message
 from app.models import BlockProjection, MemberProjection, ProcessedEvent
 
 
@@ -13,7 +14,9 @@ async def consume(db: AsyncSession, event: dict) -> bool:
     if await db.scalar(select(ProcessedEvent.id).where(ProcessedEvent.event_id == event_id)):
         return False
     kind, payload = event["event_type"], event["payload"]
-    if kind.startswith("member."):
+    if kind.startswith("message.") or kind.startswith("conversation.summary."):
+        await project_message(db, event)
+    elif kind.startswith("member."):
         org, member = uuid.UUID(str(event["organization_id"])), uuid.UUID(str(payload["member_id"]))
         projection = await db.scalar(
             select(MemberProjection).where(
