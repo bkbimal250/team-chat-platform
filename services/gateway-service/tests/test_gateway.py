@@ -107,6 +107,23 @@ async def test_query_json_authorization_and_tenant_headers_forwarded(
     assert "x-organization-id" not in forwarded.headers
 
 
+async def test_gateway_preserves_forwarded_https_for_organization(
+    settings, transport, requests_seen
+):
+    app = create_app(settings, transport)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://gateway.internal"
+        ) as client:
+            response = await client.get(
+                "/api/v1/organizations/current",
+                headers={"X-Forwarded-Proto": "https"},
+            )
+
+    assert response.status_code == 201
+    assert requests_seen[0].headers["x-forwarded-proto"] == "https"
+
+
 async def test_safe_header_filtering(settings, transport, requests_seen):
     response = await request(
         create_app(settings, transport),
