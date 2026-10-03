@@ -11,7 +11,11 @@ from pydantic import ValidationError
 from app.api.v1 import auth
 from app.core.config import Settings
 from app.core.errors import DomainError
-from app.integrations.otp_provider import DevelopmentOTPProvider, HiliteSMSOTPProvider
+from app.integrations.otp_provider import (
+    DevelopmentOTPProvider,
+    HiliteSMSOTPProvider,
+    VonageVerifyOTPProvider,
+)
 from app.models.models import OTPStatus
 from app.schemas.api import OTPRequestResponse
 from app.security.hashing import verify_secret
@@ -62,7 +66,7 @@ async def test_development_provider_executes_in_development():
 
 
 def test_development_provider_rejected_in_production():
-    with pytest.raises(ValidationError, match="production requires OTP_PROVIDER=sms"):
+    with pytest.raises(ValidationError, match="production requires an external OTP provider"):
         Settings(_env_file=None, **settings_values(APP_ENV="production"))
 
 
@@ -106,6 +110,24 @@ def test_sms_provider_is_selected_without_development_fallback(monkeypatch):
     assert not isinstance(service.provider, DevelopmentOTPProvider)
 
 
+def test_vonage_verify_provider_is_selected_without_fallback(monkeypatch):
+    configured = Settings(
+        _env_file=None,
+        **settings_values(
+            APP_ENV="production",
+            OTP_PROVIDER="vonage_verify",
+            VONAGE_API_KEY="vonage-api-key",
+            VONAGE_API_SECRET="vonage-api-secret",
+            VONAGE_BRAND="GlobalChat",
+        ),
+    )
+    monkeypatch.setattr(auth, "get_settings", lambda: configured)
+    service = auth.otp_service(
+        SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(redis={})))
+    )
+    assert isinstance(service.provider, VonageVerifyOTPProvider)
+
+
 class FakeResponse:
     def __init__(self, accepted=True, error=None, status_code=200):
         self.accepted = accepted
@@ -119,6 +141,9 @@ class FakeResponse:
     @property
     def text(self):
         return "message-id-123" if self.accepted else "Error: rejected"
+
+    def json(self):
+        return {"status": "0", "request_id": "vonage-request-id"}
 
 
 class FakeClient:
@@ -137,6 +162,10 @@ class FakeClient:
 
     async def get(self, url, *, params):
         type(self).request = (url, params)
+        return type(self).response
+
+    async def post(self, url, *, data):
+        type(self).request = (url, data)
         return type(self).response
 
 
@@ -231,6 +260,99 @@ async def test_hilite_diagnostics_categorize_transport_failures(
 
     assert any(getattr(record, "provider_category", None) == category for record in caplog.records)
     FakeClient.response = FakeResponse()
+
+
+def vonage_provider():
+    return VonageVerifyOTPProvider(
+        api_key="vonage-api-key",
+        api_secret="vonage-api-secret",
+        brand="GlobalChat",
+        base_url="https://api.nexmo.com",
+        timeout_seconds=5,
+    )
+
+
+@pytest.mark.asyncio
+async def test_vonage_verify_request_and_check_do_not_expose_sensitive_values(monkeypatch, caplog):
+    sensitive_phone = "+919876543210"
+    sensitive_code = "654321"
+    FakeClient.response = FakeResponse()
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    with caplog.at_level(logging.INFO):
+        request_id = await vonage_provider().send_otp(sensitive_phone, sensitive_code)
+        await vonage_provider().verify_otp(request_id, sensitive_code)
+
+    assert request_id == "vonage-request-id"
+    request_url, request_data = FakeClient.request
+    assert request_url.endswith("/verify/check/json")
+    assert request_data["request_id"] == request_id
+    log_content = "\n".join(f"{record.getMessage()} {record.__dict__}" for record in caplog.records)
+    for value in (sensitive_phone, sensitive_code, "vonage-api-key", "vonage-api-secret"):
+        assert value not in log_content
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("provider_status", "expected_code"),
+    [("3", "OTP_DELIVERY_FAILED"), ("6", "OTP_INVALID"), ("16", "OTP_EXPIRED")],
+)
+async def test_vonage_verify_categorizes_provider_rejections(
+    monkeypatch, provider_status, expected_code
+):
+    class RejectedResponse(FakeResponse):
+        def json(self):
+            return {"status": provider_status}
+
+    FakeClient.response = RejectedResponse()
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+    with pytest.raises(DomainError) as captured:
+        await vonage_provider().verify_otp("vonage-request-id", "654321")
+    assert captured.value.code == expected_code
+    FakeClient.response = FakeResponse()
+
+
+@pytest.mark.asyncio
+async def test_otp_service_maps_and_checks_external_request_id(monkeypatch):
+    configured = sms_settings(APP_ENV="production")
+    monkeypatch.setattr("app.services.otp_service.get_settings", lambda: configured)
+    monkeypatch.setattr("app.services.otp_service.audit_and_event", done)
+
+    class VerifyProvider:
+        request_id = "vonage-request-id"
+        verified = None
+
+        async def send_otp(self, _phone, _code):
+            return self.request_id
+
+        async def verify_otp(self, request_id, code):
+            self.verified = (request_id, code)
+
+    provider_instance = VerifyProvider()
+    database = RequestDb()
+    challenge, _ = await OTPService(provider_instance, AllowingLimiter()).request(
+        database, "+919876543210", "LOGIN", "127.0.0.1", "correlation"
+    )
+    challenge.id = uuid4()
+    challenge.status = OTPStatus.PENDING
+    challenge.attempt_count = 0
+    challenge.max_attempts = configured.otp_max_attempts
+    assert challenge.provider_request_id == provider_instance.request_id
+
+    await OTPService(provider_instance, AllowingLimiter()).verify(
+        VerifyDb(challenge), challenge.id, "654321", "127.0.0.1", "correlation"
+    )
+    assert provider_instance.verified == (provider_instance.request_id, "654321")
+    assert challenge.status == OTPStatus.VERIFIED
+
+
+def test_vonage_verify_configuration_fails_closed_without_credentials():
+    values = settings_values(APP_ENV="production", OTP_PROVIDER="vonage_verify")
+    values.update(VONAGE_API_KEY="key", VONAGE_API_SECRET="secret", VONAGE_BRAND="GlobalChat")
+    assert Settings(_env_file=None, **values).OTP_PROVIDER == "vonage_verify"
+    values["VONAGE_API_SECRET"] = None
+    with pytest.raises(ValidationError, match="VONAGE_API_SECRET"):
+        Settings(_env_file=None, **values)
 
 
 class RecordingProvider:

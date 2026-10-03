@@ -167,7 +167,10 @@ class RefreshCredential(Base):
 
 class OTPChallenge(Base):
     __tablename__ = "otp_challenges"
-    __table_args__ = (Index("otp_phone_created", "phone_number", "created_at"),)
+    __table_args__ = (
+        Index("otp_phone_created", "phone_number", "created_at"),
+        Index("otp_provider_request", "provider_request_id"),
+    )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     purpose: Mapped[str] = mapped_column(String(20))
     phone_number: Mapped[str] = mapped_column(String(32))
@@ -179,6 +182,7 @@ class OTPChallenge(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     requested_ip: Mapped[str | None] = mapped_column(String(64))
+    provider_request_id: Mapped[str | None] = mapped_column(String(128), unique=True)
 
 
 class QRLoginChallenge(Base):

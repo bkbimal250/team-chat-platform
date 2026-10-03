@@ -49,7 +49,8 @@ class OTPService:
             correlation_id=correlation_id,
             ip_address=ip,
         )
-        await self.provider.send_otp(phone, code)
+        challenge.provider_request_id = await self.provider.send_otp(phone, code)
+        await db.flush()
         return challenge, code if settings.development_otp_enabled else None
 
     async def verify(
@@ -75,7 +76,21 @@ class OTPService:
         if challenge.expires_at <= now:
             challenge.status = OTPStatus.EXPIRED
             raise DomainError("OTP_EXPIRED", "The verification code has expired.", 400)
-        if not verify_secret(code, challenge.code_hash):
+        if getattr(challenge, "provider_request_id", None):
+            try:
+                await self.provider.verify_otp(challenge.provider_request_id, code)
+            except DomainError as exc:
+                if exc.code == "OTP_EXPIRED":
+                    challenge.status = OTPStatus.EXPIRED
+                elif exc.code in {"OTP_INVALID", "OTP_TOO_MANY_ATTEMPTS"}:
+                    challenge.attempt_count += 1
+                    if (
+                        exc.code == "OTP_TOO_MANY_ATTEMPTS"
+                        or challenge.attempt_count >= challenge.max_attempts
+                    ):
+                        challenge.status = OTPStatus.LOCKED
+                raise
+        elif not verify_secret(code, challenge.code_hash):
             challenge.attempt_count += 1
             if challenge.attempt_count >= challenge.max_attempts:
                 challenge.status = OTPStatus.LOCKED

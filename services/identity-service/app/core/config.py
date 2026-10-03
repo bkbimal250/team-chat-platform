@@ -29,7 +29,9 @@ class Settings(BaseSettings):
     OTP_TTL: int = Field(300, env="OTP_TTL")  # seconds (5m)
     OTP_MAX_ATTEMPTS: int = Field(5, env="OTP_MAX_ATTEMPTS")
     OTP_RESEND_COOLDOWN: int = Field(60, env="OTP_RESEND_COOLDOWN")  # seconds
-    OTP_PROVIDER: Literal["development", "sms"] = Field("development", env="OTP_PROVIDER")
+    OTP_PROVIDER: Literal["development", "sms", "vonage_verify"] = Field(
+        "development", env="OTP_PROVIDER"
+    )
     SMS_PROVIDER: Literal["hilite_http"] | None = Field(None, env="SMS_PROVIDER")
     SMS_API_BASE_URL: AnyHttpUrl | None = Field(None, env="SMS_API_BASE_URL")
     SMS_USERNAME: str | None = Field(None, env="SMS_USERNAME")
@@ -39,6 +41,13 @@ class Settings(BaseSettings):
     SMS_TEMPLATE_ID: str | None = Field(None, env="SMS_TEMPLATE_ID")
     SMS_MESSAGE_TEMPLATE: str | None = Field(None, env="SMS_MESSAGE_TEMPLATE")
     SMS_TIMEOUT_SECONDS: float = Field(5.0, gt=0, le=30, env="SMS_TIMEOUT_SECONDS")
+    VONAGE_API_KEY: str | None = Field(None, env="VONAGE_API_KEY")
+    VONAGE_API_SECRET: str | None = Field(None, env="VONAGE_API_SECRET")
+    VONAGE_BRAND: str | None = Field(None, min_length=1, max_length=18, env="VONAGE_BRAND")
+    VONAGE_VERIFY_BASE_URL: AnyHttpUrl = Field(
+        "https://api.nexmo.com", env="VONAGE_VERIFY_BASE_URL"
+    )
+    VONAGE_TIMEOUT_SECONDS: float = Field(5.0, gt=0, le=30, env="VONAGE_TIMEOUT_SECONDS")
 
     # QR login settings
     QR_CHALLENGE_TTL: int = Field(120, env="QR_CHALLENGE_TTL")  # seconds (2m)
@@ -73,8 +82,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_otp_provider(self):
-        if self.APP_ENV == "production" and self.OTP_PROVIDER != "sms":
-            raise ValueError("production requires OTP_PROVIDER=sms")
+        if self.APP_ENV == "production" and self.OTP_PROVIDER not in {"sms", "vonage_verify"}:
+            raise ValueError("production requires an external OTP provider")
         if self.OTP_PROVIDER == "sms":
             required = {
                 "SMS_PROVIDER": self.SMS_PROVIDER,
@@ -89,6 +98,15 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise ValueError(f"SMS delivery configuration missing: {', '.join(missing)}")
+        if self.OTP_PROVIDER == "vonage_verify":
+            required = {
+                "VONAGE_API_KEY": self.VONAGE_API_KEY,
+                "VONAGE_API_SECRET": self.VONAGE_API_SECRET,
+                "VONAGE_BRAND": self.VONAGE_BRAND,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise ValueError(f"Vonage Verify configuration missing: {', '.join(missing)}")
         return self
 
     # The API layer uses lower-case names while the original settings contract

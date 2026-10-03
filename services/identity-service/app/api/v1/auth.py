@@ -8,7 +8,11 @@ from app.core.config import get_settings
 from app.core.errors import DomainError
 from app.db.session import get_session
 from app.integrations.organization_service import OrganizationServiceClient
-from app.integrations.otp_provider import DevelopmentOTPProvider, HiliteSMSOTPProvider
+from app.integrations.otp_provider import (
+    DevelopmentOTPProvider,
+    HiliteSMSOTPProvider,
+    VonageVerifyOTPProvider,
+)
 from app.models.models import Identity, IdentityStatus, Session, SessionStatus
 from app.schemas.api import (
     ContextRequest,
@@ -57,6 +61,14 @@ def otp_service(request: Request) -> OTPService:
             template_id=settings.SMS_TEMPLATE_ID or "",
             message_template=settings.SMS_MESSAGE_TEMPLATE or "",
             timeout_seconds=settings.SMS_TIMEOUT_SECONDS,
+        )
+    elif settings.OTP_PROVIDER == "vonage_verify":
+        provider = VonageVerifyOTPProvider(
+            api_key=settings.VONAGE_API_KEY or "",
+            api_secret=settings.VONAGE_API_SECRET or "",
+            brand=settings.VONAGE_BRAND or "",
+            base_url=str(settings.VONAGE_VERIFY_BASE_URL),
+            timeout_seconds=settings.VONAGE_TIMEOUT_SECONDS,
         )
     else:
         raise RuntimeError("OTP provider is not configured")
