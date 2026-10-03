@@ -4,12 +4,12 @@ variable "production_image_digests" {
   default = {
     organization = "sha256:44f1fec5a9b2bcf9dd11f1d5892c2407fe24414b4f25d44aa80aea51411914b2"
     identity     = "sha256:03c09a15d16f504270d1ad916ddfc3b44fac747b49be036dad6b9fab83167700"
-    user         = "sha256:098a250f6febeed985ae8afac50c2a01d941efe4d98f0f6d15d4d21b49cd30d2"
-    conversation = "sha256:c5edd6ba860f67a750e76fbfe75ea0adb523109d9a752c5fceb43d9929d400f5"
-    messaging    = "sha256:0159e7739740f3def20e9bf60669e3c4be10ef79d858325daf6af5d2f8007442"
-    realtime     = "sha256:355163c06c7a267c64abdd57d85e90303919c1fe3b0cbd9872901c238fd55789"
-    media        = "sha256:3485c018a724aba930c1540b091528bbee950ccab0ef6930fe97cb822bd25669"
-    notification = "sha256:da524b5b8aa3c97cc5664276843e0df8033667542236f47b7c3fba089eac8e05"
+    user         = "sha256:b7cb6f328db1056de8ab978f6b2fefa1d7837276c95e79986249726a7f48210b"
+    conversation = "sha256:b2bc913695b13597f3e6d62069f83f6cc887fd838f05cdc0015696fdb331df7e"
+    messaging    = "sha256:5df40042207b9ffa4bbce737836c5d5ed521ec06f08694426153a304642a2c70"
+    realtime     = "sha256:9f3f72ef533cfa61f5cc94949e06b2d4b71eb5b74772257924977d9db60c8ef3"
+    media        = "sha256:b28375dc924a0e154760480a045390da18ba6bbf13a236f819ac895600db12f4"
+    notification = "sha256:71499a6459cbc8e42acf72e3ce20737fc289b3c1e7f001d290ab9969be4e4921"
     gateway      = "sha256:cea7032cb3b29423c58469740f0cd88e470391919ce397f58a2bf8059c988b1a"
   }
 }

@@ -1,0 +1,21 @@
+{
+  "source_commit": "7079fc4003caf96c28b89331a70f4114c5fc21d7",
+  "tag": "git-7079fc4003ca",
+  "platform": "linux/amd64",
+  "images": {
+    "notification": "sha256:71499a6459cbc8e42acf72e3ce20737fc289b3c1e7f001d290ab9969be4e4921",
+    "conversation": "sha256:b2bc913695b13597f3e6d62069f83f6cc887fd838f05cdc0015696fdb331df7e",
+    "media": "sha256:b28375dc924a0e154760480a045390da18ba6bbf13a236f819ac895600db12f4",
+    "realtime": "sha256:9f3f72ef533cfa61f5cc94949e06b2d4b71eb5b74772257924977d9db60c8ef3",
+    "user": "sha256:b7cb6f328db1056de8ab978f6b2fefa1d7837276c95e79986249726a7f48210b",
+    "messaging": "sha256:5df40042207b9ffa4bbce737836c5d5ed521ec06f08694426153a304642a2c70"
+  },
+  "pending_migrations": {
+    "conversation": "0002_chat_summaries",
+    "messaging": "0002_media_messages"
+  },
+  "backfill": "python -m app.conversation_summary_rebuild --stage",
+  "frontend": "apps/web/web-chat-app",
+  "frontend_hosting": "UNCONFIGURED",
+  "deployed": false
+}
