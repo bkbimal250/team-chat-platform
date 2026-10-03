@@ -2,8 +2,8 @@ variable "production_image_digests" {
   description = "Immutable manifest-list digests for the production source commit fe839197a8fc."
   type        = map(string)
   default = {
-    organization = "sha256:c4f9e9ca84aeb86d8189197e523486bb5f6a04b606e0f4c2182f338d031000be"
-    identity     = "sha256:1dae2f8b53b3703ab833028d879a6866e81c57bc9b6bea86306792389c8c1028"
+    organization = "sha256:44f1fec5a9b2bcf9dd11f1d5892c2407fe24414b4f25d44aa80aea51411914b2"
+    identity     = "sha256:03c09a15d16f504270d1ad916ddfc3b44fac747b49be036dad6b9fab83167700"
     user         = "sha256:098a250f6febeed985ae8afac50c2a01d941efe4d98f0f6d15d4d21b49cd30d2"
     conversation = "sha256:c5edd6ba860f67a750e76fbfe75ea0adb523109d9a752c5fceb43d9929d400f5"
     messaging    = "sha256:0159e7739740f3def20e9bf60669e3c4be10ef79d858325daf6af5d2f8007442"
@@ -19,6 +19,28 @@ locals {
     for service, repository in aws_ecr_repository.backend :
     service => "${repository.repository_url}@${var.production_image_digests[service]}"
   }
+
+  # The Organization API is intentionally on the forwarded-HTTPS proxy-fix
+  # image. Its inactive outbox and migration task definitions remain pinned to
+  # their deployed image until an Organization release explicitly updates them.
+  organization_legacy_process_image = "${aws_ecr_repository.backend["organization"].repository_url}@sha256:c4f9e9ca84aeb86d8189197e523486bb5f6a04b606e0f4c2182f338d031000be"
+
+  process_images = merge(
+    {
+      for process_key, process in local.deployment_processes :
+      process_key => local.step10a_images[process.service]
+    },
+    {
+      organization-outbox = local.organization_legacy_process_image
+    },
+  )
+
+  migration_images = merge(
+    local.step10a_images,
+    {
+      organization = local.organization_legacy_process_image
+    },
+  )
 
   cloud_map_apis = {
     for key, process in local.deployment_processes :
@@ -75,7 +97,7 @@ resource "aws_ecs_task_definition" "process" {
 
   container_definitions = jsonencode([{
     name        = each.key
-    image       = local.step10a_images[each.value.service]
+    image       = local.process_images[each.key]
     essential   = true
     command     = split(" ", each.value.command)
     stopTimeout = 60
@@ -126,7 +148,7 @@ resource "aws_ecs_task_definition" "migration" {
 
   container_definitions = jsonencode([{
     name        = "${each.key}-migration"
-    image       = local.step10a_images[each.key]
+    image       = local.migration_images[each.key]
     essential   = true
     command     = each.value
     stopTimeout = 60
@@ -180,6 +202,25 @@ resource "aws_lb_target_group" "gateway" {
   tags = {
     Name    = "globalchat-production-gateway"
     Service = "gateway"
+  }
+}
+
+# This non-routable hostname attaches the Gateway target group to the existing
+# HTTPS listener for pre-cutover ECS health checks. It intentionally does not
+# alter the api.michat.in or ws.michat.in forwarding rules.
+resource "aws_lb_listener_rule" "gateway_pre_cutover" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 120
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.gateway.arn
+  }
+
+  condition {
+    host_header {
+      values = ["gateway-precutover.invalid"]
+    }
   }
 }
 

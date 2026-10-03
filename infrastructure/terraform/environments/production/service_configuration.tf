@@ -58,9 +58,15 @@ locals {
         ACCESS_TOKEN_ALG         = "RS256"
         ACCESS_TOKEN_TTL         = "900"
         REFRESH_TOKEN_TTL        = "2592000"
-        OTP_PROVIDER             = "sms"
+        OTP_PROVIDER             = "vonage_verify"
         SMS_PROVIDER             = "hilite_http"
+        SMS_API_BASE_URL         = "http://www.hilitemultimedia.co.in/websms/api/http/index.php"
+        SMS_ROUTE                = "ServiceImplicit"
+        SMS_SENDER_ID            = "SPAADV"
+        SMS_TEMPLATE_ID          = "1107177728023601932"
+        SMS_MESSAGE_TEMPLATE     = "Dear Customer, your Code for login to Spa Advisor is {otp}. This Code is valid for 1 minutes. Do not share this OTP with anyone. Thank You"
         SMS_TIMEOUT_SECONDS      = "5"
+        VONAGE_BRAND             = "GlobalChat"
         OTP_TTL                  = "300"
         OTP_MAX_ATTEMPTS         = "5"
         OTP_RESEND_COOLDOWN      = "60"
@@ -77,6 +83,8 @@ locals {
         SERVICE_AUTH_TOKEN       = aws_secretsmanager_secret.application["organization_token"].arn
         SMS_USERNAME             = "${aws_secretsmanager_secret.application["identity_sms"].arn}:username::"
         SMS_API_KEY              = "${aws_secretsmanager_secret.application["identity_sms"].arn}:api_key::"
+        VONAGE_API_KEY           = "${aws_secretsmanager_secret.application["identity_sms"].arn}:VONAGE_API_KEY::"
+        VONAGE_API_SECRET        = "${aws_secretsmanager_secret.application["identity_sms"].arn}:VONAGE_API_SECRET::"
       }
       processes = { api = "uvicorn app.main:app --host 0.0.0.0 --port 8001", outbox = "python -m app.events.run_worker" }
       health    = { live = "/health/live", ready = "/health/ready", dependencies = "postgresql,valkey" }

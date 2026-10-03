@@ -192,7 +192,7 @@ resource "aws_lb_listener_rule" "api" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.api.arn
+    target_group_arn = aws_lb_target_group.gateway.arn
   }
 
   condition {
