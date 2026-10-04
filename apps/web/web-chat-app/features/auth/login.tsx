@@ -13,6 +13,7 @@ export function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState("");
+  const [developmentCode, setDevelopmentCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
@@ -47,6 +48,9 @@ export function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
         return;
       }
       setChallenge(result.challenge_id);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const localApi = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(apiUrl);
+      setDevelopmentCode(process.env.NODE_ENV === "development" && localApi ? result.development_code ?? "" : "");
       setCode("");
       setCountdown(60);
       setView("otp");
@@ -178,6 +182,7 @@ export function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
                   </p>
                   <label className="block text-sm font-semibold">
                     Verification code
+                    {developmentCode && <span className="mt-2 block rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Local development code: {developmentCode}. No SMS was sent.</span>}
                     <input
                       autoFocus
                       required

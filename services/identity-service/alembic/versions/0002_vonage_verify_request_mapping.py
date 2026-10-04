@@ -21,10 +21,16 @@ def upgrade() -> None:
         type_=sa.String(length=64),
         existing_nullable=False,
     )
-    op.add_column(
-        "otp_challenges", sa.Column("provider_request_id", sa.String(length=128), nullable=True)
-    )
-    op.create_index("otp_provider_request", "otp_challenges", ["provider_request_id"], unique=True)
+    # The legacy initial migration uses current metadata on fresh databases.
+    inspector = sa.inspect(op.get_bind())
+    if "provider_request_id" not in {c["name"] for c in inspector.get_columns("otp_challenges")}:
+        op.add_column(
+            "otp_challenges", sa.Column("provider_request_id", sa.String(length=128), nullable=True)
+        )
+    if "otp_provider_request" not in {i["name"] for i in inspector.get_indexes("otp_challenges")}:
+        op.create_index(
+            "otp_provider_request", "otp_challenges", ["provider_request_id"], unique=True
+        )
 
 
 def downgrade() -> None:

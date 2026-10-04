@@ -22,7 +22,7 @@ class Broker:
         self.channel = await self.connection.channel(publisher_confirms=True)
         await self.channel.set_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
         self.exchange = await self.channel.declare_exchange(
-            os.getenv("RABBITMQ_EXCHANGE", "platform.events"),
+            os.getenv("RABBITMQ_EXCHANGE", "user.events"),
             aio_pika.ExchangeType.TOPIC,
             durable=True,
         )

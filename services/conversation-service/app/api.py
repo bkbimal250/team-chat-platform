@@ -114,9 +114,18 @@ async def list_conversations(
     session: AsyncSession = Depends(db),
 ):
     org, mid = p
+    counts = (
+        select(ConversationMember.conversation_id, func.count(ConversationMember.id).label("count"))
+        .where(
+            ConversationMember.organization_id == org, ConversationMember.status == MStatus.ACTIVE
+        )
+        .group_by(ConversationMember.conversation_id)
+        .subquery()
+    )
     q = (
-        select(Conversation, ConversationMember, MemberState, func.count(ConversationMember.id))
+        select(Conversation, ConversationMember, MemberState, counts.c.count)
         .join(ConversationMember, ConversationMember.conversation_id == Conversation.id)
+        .join(counts, counts.c.conversation_id == Conversation.id)
         .join(
             MemberState,
             (MemberState.conversation_id == Conversation.id) & (MemberState.member_id == mid),
@@ -126,7 +135,7 @@ async def list_conversations(
             ConversationMember.status == MStatus.ACTIVE,
             Conversation.organization_id == org,
         )
-        .group_by(Conversation.id, ConversationMember.id, MemberState.id)
+        .group_by(Conversation.id, ConversationMember.id, MemberState.id, counts.c.count)
     )
     if type:
         q = q.where(Conversation.type == type)

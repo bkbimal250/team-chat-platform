@@ -180,6 +180,8 @@ async def mark(db, p, conversation_id, sequence, read, correlation_id):
             organization_id=p.organization_id,
             conversation_id=conversation_id,
             member_id=p.member_id,
+            last_delivered_sequence=0,
+            last_read_sequence=0,
         )
         db.add(state)
     if read:

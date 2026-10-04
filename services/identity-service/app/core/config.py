@@ -66,6 +66,8 @@ class Settings(BaseSettings):
         "http://organization-service:8000", env="ORGANIZATION_SERVICE_URL"
     )
 
+    USER_SERVICE_URL: AnyHttpUrl = Field("http://user-service:8000", env="USER_SERVICE_URL")
+
     # Rate limits (format: "count/period_seconds")
     RATE_LIMIT_OTP_REQUEST: str = Field("5/600", env="RATE_LIMIT_OTP_REQUEST")
     RATE_LIMIT_OTP_VERIFY: str = Field("10/600", env="RATE_LIMIT_OTP_VERIFY")
@@ -112,6 +114,10 @@ class Settings(BaseSettings):
     # The API layer uses lower-case names while the original settings contract
     # uses environment-style names. Keep a single source of truth during the
     # transition instead of maintaining two divergent configuration objects.
+    @property
+    def service_name(self) -> str:
+        return self.SERVICE_NAME
+
     @property
     def app_env(self) -> str:
         return self.APP_ENV

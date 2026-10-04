@@ -28,9 +28,11 @@ def _consume() -> None:
     channel = connection.channel()
     channel.exchange_declare(exchange=EXCHANGE_ORGANIZATION, exchange_type="topic", durable=True)
     channel.exchange_declare(exchange=EXCHANGE_MESSAGING, exchange_type="topic", durable=True)
+    channel.exchange_declare(exchange="user.events", exchange_type="topic", durable=True)
     channel.queue_declare(queue="notification.projections", durable=True)
     for key in ("user.#", "member.#", "conversation.#"):
         channel.queue_bind("notification.projections", EXCHANGE_ORGANIZATION, key)
+    channel.queue_bind("notification.projections", "user.events", "user.#")
     channel.queue_declare(queue="notification.message-created", durable=True)
     channel.queue_bind("notification.message-created", EXCHANGE_MESSAGING, "message.created.v1")
     channel.basic_qos(prefetch_count=1)

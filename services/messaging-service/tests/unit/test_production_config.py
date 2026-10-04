@@ -38,5 +38,6 @@ def test_production_accepts_external_injected_dependencies():
     assert configured.app_env == "production"
 
 
-def test_development_defaults_remain_available():
-    assert Settings().rabbitmq_url.startswith("amqp://guest:guest@localhost")
+def test_development_defaults_remain_available(monkeypatch):
+    monkeypatch.delenv("RABBITMQ_URL", raising=False)
+    assert Settings(_env_file=None).rabbitmq_url.startswith("amqp://guest:guest@localhost")

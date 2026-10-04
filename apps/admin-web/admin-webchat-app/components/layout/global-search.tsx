@@ -1,1 +1,66 @@
-"use client";import { Search } from "lucide-react";import { useEffect,useState } from "react";const items=["Acme India","Bimal Global","Northstar Labs","Sarah Khan","Priya Sharma","Engineering","Product Team"];export function GlobalSearch(){const [open,setOpen]=useState(false);const [q,setQ]=useState("");useEffect(()=>{const h=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key==="k"){e.preventDefault();setOpen(true)}if(e.key==="Escape")setOpen(false)};addEventListener("keydown",h);return()=>removeEventListener("keydown",h)},[]);return <><button aria-label="Search" onClick={()=>setOpen(true)} className="rounded border p-2"><Search size={17}/></button>{open&&<div className="fixed inset-0 z-50 grid place-items-start bg-slate-950/40 p-4 pt-24" onClick={()=>setOpen(false)}><div role="dialog" className="w-full max-w-lg rounded-xl bg-white p-4" onClick={e=>e.stopPropagation()}><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search" className="w-full rounded border p-3"/>{items.filter(x=>x.toLowerCase().includes(q.toLowerCase())).map(x=><button className="block w-full p-3 text-left hover:bg-slate-50" key={x}>{x}<span className="float-right text-xs text-slate-400">Coming soon</span></button>)}</div></div>}</>}
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
+import { navigation } from "@/config/navigation";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+export function GlobalSearch() {
+  const [open, setOpen] = useState(false),
+    [query, setQuery] = useState("");
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+  const items = navigation
+    .flatMap((group) => group.items)
+    .filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <>
+      <Button
+        variant="outline"
+        aria-label="Find an admin screen"
+        onClick={() => setOpen(true)}
+      >
+        <Search size={17} />
+      </Button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Find an admin screen"
+      >
+        <label className="mt-3 block text-sm">
+          Screen name
+          <input
+            className="mt-1 w-full rounded border p-2"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <p className="mt-2 text-xs text-slate-500">
+          Navigation search only. Use each resource screen for authorized
+          backend data search.
+        </p>
+        <ul className="mt-3 max-h-80 overflow-auto">
+          {items.map((item) => (
+            <li key={item.href}>
+              <Link
+                className="block rounded p-2 hover:bg-slate-50"
+                href={item.href}
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+    </>
+  );
+}

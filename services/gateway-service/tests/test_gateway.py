@@ -229,3 +229,22 @@ async def test_cors_allows_only_production_origins(settings, transport):
     )
     assert allowed.headers["access-control-allow-origin"] == "https://admin.michat.in"
     assert "access-control-allow-origin" not in denied.headers
+
+
+@pytest.mark.parametrize("path", ["start", "verify", "resend"])
+async def test_company_registration_routes_forward_public_body(
+    settings, transport, requests_seen, path
+):
+    payload = {"registration_id": "opaque-test", "otp": "test-placeholder"}
+    response = await request(
+        create_app(settings, transport),
+        "POST",
+        "/api/v1/auth/registration/company/" + path,
+        json=payload,
+        headers={"X-Correlation-ID": "registration-test"},
+    )
+    assert response.status_code == 201
+    assert requests_seen[0].url.host == "identity.test"
+    assert json.loads(requests_seen[0].content) == payload
+    assert "authorization" not in requests_seen[0].headers
+    assert requests_seen[0].headers["x-correlation-id"] == "registration-test"

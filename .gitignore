@@ -59,3 +59,6 @@ infrastructure/terraform/**/*-task-arn.txt
 
 # Flutter/Dart local tooling
 devtools_options.yaml
+
+# Private local development credentials, keys, processes and logs
+.local/

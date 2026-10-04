@@ -21,6 +21,14 @@ async def apply_membership_event(db: AsyncSession, envelope: dict) -> bool:
     if event_type.startswith("member."):
         organization_id = UUID(str(envelope["organization_id"]))
         member_id = UUID(str(payload["member_id"]))
+        identity_reference = payload.get("identity_id", payload.get("user_id"))
+        if identity_reference is None:
+            db.add(
+                ProcessedEvent(
+                    event_id=event_id, event_type=event_type, producer=envelope["producer"]
+                )
+            )
+            return True
         projection = await db.scalar(
             select(MembershipProjection).where(
                 MembershipProjection.organization_id == organization_id,
@@ -31,7 +39,7 @@ async def apply_membership_event(db: AsyncSession, envelope: dict) -> bool:
             projection = MembershipProjection(
                 organization_id=organization_id,
                 member_id=member_id,
-                identity_id=UUID(str(payload["identity_id"])),
+                identity_id=UUID(str(identity_reference)),
                 status=payload.get("status", event_type.split(".")[1].upper()),
             )
             db.add(projection)

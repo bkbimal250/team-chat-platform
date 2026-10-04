@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.config import MediaPolicy, MediaSettings, get_settings
 from app.db import SessionLocal, engine
 from app.durable import DurableMediaService
+from app.local_storage import LocalPrivateStorage
 from app.schemas import MultipartCompleteRequest, MultipartPartsRequest, UploadRequest
 from app.security import Principal, get_principal
 from app.service import MediaService
@@ -15,7 +16,14 @@ from app.storage import FakePrivateStorage, S3PrivateStorage
 
 def build_media_service(settings: MediaSettings | None = None) -> MediaService:
     settings = settings or get_settings()
-    if settings.media_storage_backend == "s3":
+    if settings.media_storage_backend == "local":
+        storage = LocalPrivateStorage(
+            settings.local_storage_root,
+            settings.local_storage_secret,
+            settings.local_storage_base_url,
+        )
+        bucket = settings.media_s3_bucket or "globalchat-local-media"
+    elif settings.media_storage_backend == "s3":
         storage = S3PrivateStorage(
             region=settings.aws_region,
             bucket=settings.media_s3_bucket,
@@ -26,7 +34,7 @@ def build_media_service(settings: MediaSettings | None = None) -> MediaService:
         storage = FakePrivateStorage()
         bucket = settings.media_s3_bucket or "team-chat-platform-private"
     policy = MediaPolicy(bucket=bucket)
-    if settings.app_env == "production":
+    if settings.app_env == "production" or settings.media_storage_backend in {"s3", "local"}:
         return DurableMediaService(storage, policy, SessionLocal)
     return MediaService(storage, policy)
 
@@ -43,6 +51,80 @@ app = FastAPI(title="Media Service", version="1.0.0", lifespan=lifespan)
 # Keep development imports and OpenAPI generation usable; production configuration is
 # revalidated at startup by the lifespan handler.
 app.state.media_service = build_media_service()
+
+# Direct signed development byte transfer; production exposes metadata/signing only.
+if get_settings().media_storage_backend == "local":
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_methods=["GET", "PUT"],
+        allow_headers=["Content-Type"],
+        expose_headers=["ETag"],
+    )
+
+    @app.put("/local-storage/{token}", include_in_schema=False)
+    async def local_put(token: str, request: Request):
+        import hashlib
+        import json
+        import os
+
+        from app.storage import StorageError
+
+        storage = service().storage
+        try:
+            body = storage.verify(token, "put")
+        except StorageError:
+            try:
+                body = storage.verify(token, "part")
+            except StorageError:
+                return JSONResponse({"error": "invalid storage capability"}, status_code=403)
+        path = storage.location(body["bucket"], body["key"])
+        if body["action"] == "part":
+            path = (
+                storage.parts_path(body["bucket"], body["key"], body["upload_id"])
+                / f"{int(body['part_number'])}.part"
+            )
+        elif request.headers.get("content-type") != body["mime"]:
+            return JSONResponse({"error": "content type mismatch"}, status_code=400)
+        temporary = path.with_suffix(".uploading")
+        size = 0
+        digest = hashlib.sha256()
+        try:
+            with temporary.open("wb") as handle:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > 64 * 1024 * 1024:
+                        return JSONResponse(
+                            {"error": "local part limit is 64 MiB; use multipart"}, status_code=413
+                        )
+                    digest.update(chunk)
+                    handle.write(chunk)
+            os.replace(temporary, path)
+            if body["action"] == "put":
+                path.with_suffix(".json").write_text(json.dumps({"mime": body["mime"]}))
+            return JSONResponse({"status": "uploaded"}, headers={"ETag": digest.hexdigest()})
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    @app.get("/local-storage/{token}", include_in_schema=False)
+    async def local_get(token: str):
+        from fastapi.responses import FileResponse
+
+        from app.storage import StorageError
+
+        storage = service().storage
+        try:
+            body = storage.verify(token, "get")
+        except StorageError:
+            return JSONResponse({"error": "invalid storage capability"}, status_code=403)
+        metadata = await storage.head(body["bucket"], body["key"])
+        if metadata is None:
+            return JSONResponse({"error": "object unavailable"}, status_code=404)
+        return FileResponse(
+            storage.location(body["bucket"], body["key"]), media_type=metadata.mime_type
+        )
 
 
 def service() -> MediaService:

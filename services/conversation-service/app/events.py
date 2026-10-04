@@ -36,15 +36,21 @@ async def consume(db: AsyncSession, event: dict) -> bool:
     elif kind == "user.blocked.v1":
         db.add(
             BlockProjection(
-                blocker_user_id=uuid.UUID(str(payload["blocker_user_id"])),
-                blocked_user_id=uuid.UUID(str(payload["blocked_user_id"])),
+                blocker_user_id=uuid.UUID(
+                    str(payload.get("blocker_identity_id", payload["blocker_user_id"]))
+                ),
+                blocked_user_id=uuid.UUID(
+                    str(payload.get("blocked_identity_id", payload["blocked_user_id"]))
+                ),
             )
         )
     elif kind == "user.unblocked.v1":
         row = await db.scalar(
             select(BlockProjection).where(
-                BlockProjection.blocker_user_id == uuid.UUID(str(payload["blocker_user_id"])),
-                BlockProjection.blocked_user_id == uuid.UUID(str(payload["blocked_user_id"])),
+                BlockProjection.blocker_user_id
+                == uuid.UUID(str(payload.get("blocker_identity_id", payload["blocker_user_id"]))),
+                BlockProjection.blocked_user_id
+                == uuid.UUID(str(payload.get("blocked_identity_id", payload["blocked_user_id"]))),
             )
         )
         if row:

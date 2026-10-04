@@ -49,7 +49,7 @@ export async function apiRequest<T>(
 
 export const identityApi = {
   requestOtp: (phone_number: string) =>
-    apiRequest<{ challenge_id: string | null }>("/api/v1/auth/otp/request", {
+    apiRequest<{ challenge_id: string | null; development_code?: string | null }>("/api/v1/auth/otp/request", {
       method: "POST",
       body: JSON.stringify({ phone_number, purpose: "LOGIN" }),
     }),

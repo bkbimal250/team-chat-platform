@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import DomainError
-from app.db.session import get_session
+from app.db.session import command_transaction, get_session
 from app.models.models import Device, DeviceStatus, Session, SessionStatus
 from app.schemas.api import DeviceResponse, RevokeResponse
 from app.security.dependencies import Principal, current_principal
@@ -81,7 +81,7 @@ async def revoke_device(
     db: AsyncSession = Depends(get_session),
 ):
     """Revoking the current device is defined as logout of that device/session family."""
-    async with db.begin():
+    async with command_transaction(db):
         device = (
             await db.execute(
                 select(Device)

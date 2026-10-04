@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import AsyncSessionLocal, engine  # noqa: F401
@@ -14,3 +16,18 @@ async def get_async_session() -> AsyncSession:
 
 # Backward-compatible dependency name used by the mounted API routers.
 get_session = get_async_session
+
+
+@asynccontextmanager
+async def command_transaction(session: AsyncSession):
+    """Retain authentication row locks and commit the same request transaction."""
+    if not session.in_transaction():
+        async with session.begin():
+            yield
+        return
+    try:
+        yield
+        await session.commit()
+    except BaseException:
+        await session.rollback()
+        raise

@@ -1,0 +1,2535 @@
+{
+  "info": {
+    "name": "GlobalChat Local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Organization",
+      "item": [
+        {
+          "name": "GET /api/schema/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/schema/",
+            "description": "schema_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/audit-logs/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/audit-logs/",
+            "description": "v1_audit_logs_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/audit-logs/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/audit-logs/{id}/",
+            "description": "v1_audit_logs_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/branches/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/",
+            "description": "v1_branches_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/branches/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/",
+            "description": "v1_branches_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"address\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"city\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"state\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"postal_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/branches/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/",
+            "description": "v1_branches_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/branches/{id}/",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/",
+            "description": "v1_branches_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"address\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"city\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"state\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"postal_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/branches/{id}/lifecycle/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/lifecycle/",
+            "description": "v1_branches_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/branches/{id}/members/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/",
+            "description": "v1_branches_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/branches/{id}/members/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/",
+            "description": "v1_branches_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"is_primary\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/branches/{id}/members/{membership_id}/leave/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/{membership_id}/leave/",
+            "description": "v1_branches_members_leave_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/branches/{id}/members/{membership_id}/primary/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/{membership_id}/primary/",
+            "description": "v1_branches_members_primary_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/invitations/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/",
+            "description": "v1_invitations_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/invitations/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/",
+            "description": "v1_invitations_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"team_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"intended_role_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"expires_at\": \"2026-10-04T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/invitations/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/",
+            "description": "v1_invitations_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/invitations/{id}/accept/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/accept/",
+            "description": "v1_invitations_accept_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/invitations/{id}/revoke/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/revoke/",
+            "description": "v1_invitations_revoke_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/members/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/",
+            "description": "v1_members_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/members/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/",
+            "description": "v1_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"employee_code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"designation\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"department\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/members/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/{id}/",
+            "description": "v1_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/members/{id}/",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/{id}/",
+            "description": "v1_members_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"employee_code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"designation\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"department\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/members/{id}/lifecycle/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/{id}/lifecycle/",
+            "description": "v1_members_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/members/{id}/roles/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/{id}/roles/",
+            "description": "v1_members_roles_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"remove\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/organizations/current/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/",
+            "description": "v1_organizations_current_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/organizations/current/",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/",
+            "description": "v1_organizations_current_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"slug\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"organization_type\": \"BUSINESS\",\n  \"logo_media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"timezone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/organizations/current/lifecycle/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/lifecycle/",
+            "description": "v1_organizations_current_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/organizations/current/settings/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/settings/",
+            "description": "v1_organizations_current_settings_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/organizations/current/settings/",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/settings/",
+            "description": "v1_organizations_current_settings_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allow_member_invites\": true,\n  \"allow_group_creation\": true,\n  \"allow_external_chat\": true,\n  \"max_members\": 0,\n  \"max_teams\": 0,\n  \"default_timezone\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/permissions/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/permissions/",
+            "description": "v1_permissions_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/role-assignments/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/role-assignments/",
+            "description": "v1_role_assignments_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/roles/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/roles/",
+            "description": "v1_roles_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/roles/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/roles/",
+            "description": "v1_roles_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"permission_codes\": [\n    \"<REPLACE_WITH_VALID_VALUE>\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/roles/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/roles/{id}/",
+            "description": "v1_roles_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/teams/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/",
+            "description": "v1_teams_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/teams/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/",
+            "description": "v1_teams_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"type\": \"STANDARD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/teams/{id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/",
+            "description": "v1_teams_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/teams/{id}/",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/",
+            "description": "v1_teams_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"type\": \"STANDARD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/teams/{id}/lifecycle/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/lifecycle/",
+            "description": "v1_teams_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/teams/{id}/members/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/",
+            "description": "v1_teams_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/teams/{id}/members/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/",
+            "description": "v1_teams_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"role\": \"MEMBER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/teams/{id}/members/{membership_id}/leave/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/{membership_id}/leave/",
+            "description": "v1_teams_members_leave_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{identity_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{identity_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/otp/request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
+            "description": "Otp Request. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"purpose\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/otp/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
+            "description": "Otp Verify. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"device\": {\n    \"installation_id\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"platform\": \"ANDROID\",\n    \"device_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"device_model\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"os_version\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"app_version\": \"<REPLACE_WITH_VALID_VALUE>\"\n  },\n  \"organization_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/refresh",
+            "description": "Refresh. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/logout",
+            "description": "Logout. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/logout-all",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/logout-all",
+            "description": "Logout All. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/context",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/context",
+            "description": "Switch Context. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/auth/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/me",
+            "description": "Me. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/qr/challenges",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges",
+            "description": "Qr Create. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"installation_id\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"platform\": \"ANDROID\",\n  \"device_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"device_model\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"os_version\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"app_version\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/auth/qr/challenges/{challenge_id}/status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/status",
+            "description": "Qr Status. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/qr/challenges/{challenge_id}/authorize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/authorize",
+            "description": "Qr Authorize. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"secret\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/qr/challenges/{challenge_id}/consume",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/consume",
+            "description": "Qr Consume. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"secret\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/devices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/devices",
+            "description": "Devices. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/devices/{device_id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/devices/{device_id}",
+            "description": "Device. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/devices/{device_id}/revoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/devices/{device_id}/revoke",
+            "description": "Revoke Device. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/auth/sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/sessions",
+            "description": "Sessions. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/sessions/{session_id}/revoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/sessions/{session_id}/revoke",
+            "description": "Revoke. Replace schema placeholders. See services/IDENTITY-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{user_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{user_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "POST /internal/v1/users/block-check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{user_base_url}}/internal/v1/users/block-check",
+            "description": "Block Check. Replace schema placeholders. See services/USER-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_a_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"user_b_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /internal/v1/users/projections",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{user_base_url}}/internal/v1/users/projections",
+            "description": "Projections. Replace schema placeholders. See services/USER-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/users/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me",
+            "description": "Me. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/users/me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me",
+            "description": "Update Me. Replace schema placeholders. See services/USER-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"avatar_media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"about\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/users/me/preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/preferences",
+            "description": "Preferences. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/users/me/preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/preferences",
+            "description": "Update Preferences. Replace schema placeholders. See services/USER-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"language\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"timezone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"theme_preference\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"enter_to_send\": true,\n  \"media_auto_download\": true,\n  \"link_preview_enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/users/{user_id}/block",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/{user_id}/block",
+            "description": "Block. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "DELETE /api/v1/users/{user_id}/block",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/{user_id}/block",
+            "description": "Unblock. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/users/me/privacy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/privacy",
+            "description": "Privacy. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/users/me/privacy",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/privacy",
+            "description": "Update Privacy. Replace schema placeholders. See services/USER-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profile_photo_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"about_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"online_status_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"last_seen_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"read_receipts_enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/users/me/blocked",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/blocked",
+            "description": "Blocked Users. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/users/search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/search",
+            "description": "Search Users. Replace schema placeholders. See services/USER-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/users/{user_id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/{user_id}",
+            "description": "Get Profile. Replace schema placeholders. See services/USER-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conversation",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{conversation_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{conversation_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/direct",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/direct",
+            "description": "Direct. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/groups",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/groups",
+            "description": "Group. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"member_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations",
+            "description": "List Conversations. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/conversations/{cid}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}",
+            "description": "Get. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/conversations/{cid}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}",
+            "description": "Update. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"avatar_media_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/members",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members",
+            "description": "Add. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/conversations/{cid}/members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members",
+            "description": "Members. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "DELETE /api/v1/conversations/{cid}/members/{mid}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}",
+            "description": "Remove. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/leave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/leave",
+            "description": "Leave. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/close",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/close",
+            "description": "Close. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/members/{mid}/promote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}/promote",
+            "description": "Promote. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/members/{mid}/demote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}/demote",
+            "description": "Demote. Replace schema placeholders. See services/CONVERSATION-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{cid}/transfer-ownership",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/transfer-ownership",
+            "description": "Transfer. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/conversations/{cid}/state",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/state",
+            "description": "State. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_archived\": true,\n  \"is_pinned\": true,\n  \"muted_until\": \"2026-10-04T00:00:00Z\",\n  \"is_muted_forever\": true,\n  \"notification_level\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /internal/v1/conversations/{cid}/authorize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{conversation_base_url}}/internal/v1/conversations/{cid}/authorize",
+            "description": "Authorize Send. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messaging",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{messaging_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/MESSAGING-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{messaging_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/MESSAGING-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{conversation_id}/messages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/messages",
+            "description": "Create. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_message_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"type\": \"TEXT\",\n  \"text\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"reply_to_message_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/conversations/{conversation_id}/messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/messages",
+            "description": "History. Replace schema placeholders. See services/MESSAGING-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/messages/{message_id}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}",
+            "description": "Edit. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/v1/messages/{message_id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}",
+            "description": "Delete. Replace schema placeholders. See services/MESSAGING-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/messages/{message_id}/reactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}/reactions",
+            "description": "Add Reaction. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reaction\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/v1/messages/{message_id}/reactions/{reaction}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}/reactions/{reaction}",
+            "description": "Remove Reaction. Replace schema placeholders. See services/MESSAGING-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{conversation_id}/delivered",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/delivered",
+            "description": "Delivered. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sequence\": 1.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/conversations/{conversation_id}/read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/read",
+            "description": "Read. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sequence\": 1.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{media_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{media_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/media/uploads",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/uploads",
+            "description": "Initiate Upload. Replace schema placeholders. See services/MEDIA-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"filename\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"mime_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"size_bytes\": 1,\n  \"media_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"checksum_sha256\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/media/multipart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/multipart",
+            "description": "Initiate Multipart. Replace schema placeholders. See services/MEDIA-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"filename\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"mime_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"size_bytes\": 1,\n  \"media_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"checksum_sha256\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/media/{media_id}/multipart/parts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart/parts",
+            "description": "Multipart Parts. Replace schema placeholders. See services/MEDIA-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"part_numbers\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/media/{media_id}/multipart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart",
+            "description": "Multipart Resume. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "DELETE /api/v1/media/{media_id}/multipart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart",
+            "description": "Abort Multipart. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "POST /api/v1/media/{media_id}/multipart/complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart/complete",
+            "description": "Complete Multipart. Replace schema placeholders. See services/MEDIA-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parts\": [\n    {}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/media/{media_id}/complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/complete",
+            "description": "Complete Upload. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/media/{media_id}/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/download",
+            "description": "Download. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        },
+        {
+          "name": "DELETE /api/v1/media/{media_id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{media_id}",
+            "description": "Delete. Replace schema placeholders. See services/MEDIA-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{notification_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/NOTIFICATION-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{notification_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/NOTIFICATION-API.md."
+          }
+        },
+        {
+          "name": "PUT /api/v1/notifications/devices/current/token",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/notifications/devices/current/token",
+            "description": "Put Token. Replace schema placeholders. See services/NOTIFICATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"provider\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"push_token\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/v1/notifications/devices/current/token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/notifications/devices/current/token",
+            "description": "Delete Token. Replace schema placeholders. See services/NOTIFICATION-API.md."
+          }
+        },
+        {
+          "name": "GET /api/v1/notifications/preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/notifications/preferences",
+            "description": "Get Preferences. Replace schema placeholders. See services/NOTIFICATION-API.md."
+          }
+        },
+        {
+          "name": "PATCH /api/v1/notifications/preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/notifications/preferences",
+            "description": "Patch Preferences. Replace schema placeholders. See services/NOTIFICATION-API.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"push_enabled\": true,\n  \"message_notifications\": true,\n  \"group_notifications\": true,\n  \"notification_preview\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"sound_enabled\": true,\n  \"vibration_enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/notifications",
+            "description": "List Notifications. Replace schema placeholders. See services/NOTIFICATION-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Realtime",
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{realtime_base_url}}/health/live",
+            "description": "Live. Replace schema placeholders. See services/REALTIME-API.md."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{realtime_base_url}}/health/ready",
+            "description": "Ready. Replace schema placeholders. See services/REALTIME-API.md."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gateway",
+      "item": []
+    },
+    {
+      "name": "Company registration - LOCAL ONLY",
+      "item": [
+        {
+          "name": "1 Register company",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/start",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Development Company\",\n  \"owner_name\": \"Development Owner\",\n  \"email\": \"{{registration_email}}\",\n  \"phone\": \"{{registration_phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 202) pm.environment.set(\"registration_id\", pm.response.json().registration_id);",
+                  "// Read development_code privately. Set registration_otp manually; never console.log it."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2 Resend after cooldown",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/resend",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_id\": \"{{registration_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "3 Verify company owner",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_id\": \"{{registration_id}}\",\n  \"otp\": \"{{registration_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Development Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 200){ const data=pm.response.json(); pm.environment.set(\"access_token\", data.access_token); pm.environment.set(\"refresh_token\", data.refresh_token); pm.environment.unset(\"registration_otp\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4 Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_base_url}}/api/v1/users/me",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "5 Organization",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_base_url}}/api/v1/organizations/current/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "6 Owner roles",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_base_url}}/api/v1/roles/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "7 Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/logout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 200){ pm.environment.unset(\"access_token\"); pm.environment.unset(\"refresh_token\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8 Returning login request",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"{{registration_phone}}\",\n  \"purpose\": \"LOGIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 202) pm.environment.set(\"challenge_id\", pm.response.json().challenge_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9 Returning login verify",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"code\": \"{{login_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Development Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 200){ const data=pm.response.json(); pm.environment.set(\"access_token\",data.access_token); pm.environment.set(\"refresh_token\",data.refresh_token); pm.environment.unset(\"login_otp\"); }"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const base = pm.environment.get(\"gateway_base_url\") || \"\";",
+              "if (!/^http:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/.test(base)) { throw new Error(\"Company onboarding collection is local-only.\"); }"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

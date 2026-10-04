@@ -1,13 +1,15 @@
+import hmac
 import os
 import uuid
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Integer,
     String,
     UniqueConstraint,
     func,
@@ -99,6 +101,10 @@ class OutboxEvent(Base):
     correlation_id: Mapped[str] = mapped_column(String(128))
     payload: Mapped[dict] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(String(256))
 
 
 class ProcessedEvent(Base):
@@ -134,7 +140,9 @@ async def db():
 
 
 async def internal(x_internal_service_token: str = Header(...)):
-    if x_internal_service_token != os.getenv("INTERNAL_SERVICE_TOKEN", ""):
+    if not os.getenv("INTERNAL_SERVICE_TOKEN") or not hmac.compare_digest(
+        x_internal_service_token, os.getenv("INTERNAL_SERVICE_TOKEN", "")
+    ):
         raise HTTPException(401, "service authentication required")
 
 
@@ -187,13 +195,13 @@ def projection(user: User) -> dict:
     }
 
 
-def outbox(session: AsyncSession, user: User, event_type: str) -> None:
+def outbox(session: AsyncSession, user: User, event_type: str, payload: dict | None = None) -> None:
     session.add(
         OutboxEvent(
             event_type=event_type,
             aggregate_id=user.id,
             correlation_id="",
-            payload={"user_id": str(user.id)},
+            payload={"user_id": str(user.id), **(payload or {})},
             organization_id=None,
         )
     )
@@ -216,15 +224,16 @@ async def ready():
 
 @app.post("/internal/v1/users/block-check", dependencies=[Depends(internal)])
 async def block_check(body: BlockCheck, session: AsyncSession = Depends(db)):
+    # Internal callers may hold an Identity ID from Organization membership events.
+    a_ids = select(User.id).where(
+        (User.id == body.user_a_id) | (User.identity_id == body.user_a_id)
+    )
+    b_ids = select(User.id).where(
+        (User.id == body.user_b_id) | (User.identity_id == body.user_b_id)
+    )
     q = select(UserBlock.id).where(
-        (
-            (UserBlock.blocker_user_id == body.user_a_id)
-            & (UserBlock.blocked_user_id == body.user_b_id)
-        )
-        | (
-            (UserBlock.blocker_user_id == body.user_b_id)
-            & (UserBlock.blocked_user_id == body.user_a_id)
-        )
+        ((UserBlock.blocker_user_id.in_(a_ids)) & (UserBlock.blocked_user_id.in_(b_ids)))
+        | ((UserBlock.blocker_user_id.in_(b_ids)) & (UserBlock.blocked_user_id.in_(a_ids)))
     )
     return {"blocked": await session.scalar(q) is not None}
 
@@ -307,6 +316,9 @@ async def block(
         user = await current_user(session, context)
         if user.id == user_id:
             raise HTTPException(422, "cannot block yourself")
+        target = await session.get(User, user_id)
+        if target is None:
+            raise HTTPException(404, "user not found")
         item = await session.scalar(
             select(UserBlock).where(
                 UserBlock.blocker_user_id == user.id, UserBlock.blocked_user_id == user_id
@@ -314,7 +326,17 @@ async def block(
         )
         if not item:
             session.add(UserBlock(blocker_user_id=user.id, blocked_user_id=user_id))
-            outbox(session, user, "user.blocked.v1")
+            outbox(
+                session,
+                user,
+                "user.blocked.v1",
+                {
+                    "blocker_user_id": str(user.id),
+                    "blocked_user_id": str(target.id),
+                    "blocker_identity_id": str(user.identity_id),
+                    "blocked_identity_id": str(target.identity_id),
+                },
+            )
     return {"blocked": True}
 
 
@@ -326,6 +348,9 @@ async def unblock(
 ):
     async with session.begin():
         user = await current_user(session, context)
+        target = await session.get(User, user_id)
+        if target is None:
+            raise HTTPException(404, "user not found")
         item = await session.scalar(
             select(UserBlock).where(
                 UserBlock.blocker_user_id == user.id, UserBlock.blocked_user_id == user_id
@@ -333,7 +358,17 @@ async def unblock(
         )
         if item:
             await session.delete(item)
-            outbox(session, user, "user.unblocked.v1")
+            outbox(
+                session,
+                user,
+                "user.unblocked.v1",
+                {
+                    "blocker_user_id": str(user.id),
+                    "blocked_user_id": str(target.id),
+                    "blocker_identity_id": str(user.identity_id),
+                    "blocked_identity_id": str(target.identity_id),
+                },
+            )
     return {"blocked": False}
 
 
@@ -433,3 +468,34 @@ async def get_profile(
         if visible is None:
             raise HTTPException(404, "user not found")
     return projection(target)
+
+
+class OwnerProvision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    identity_id: uuid.UUID
+    display_name: str = Field(min_length=1, max_length=200)
+
+
+@app.post("/internal/v1/users/company-owner", dependencies=[Depends(internal)])
+async def provision_owner(body: OwnerProvision, session: AsyncSession = Depends(db)):
+    async with session.begin():
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(:key)"), {"key": body.identity_id.int % (2**63 - 1)}
+        )
+        user = await session.scalar(select(User).where(User.identity_id == body.identity_id))
+        if user is None:
+            user = User(
+                id=body.identity_id, identity_id=body.identity_id, display_name=body.display_name
+            )
+            session.add(user)
+            await session.flush()
+            session.add(UserPreferences(user_id=user.id))
+            session.add(UserPrivacySettings(user_id=user.id))
+            outbox(
+                session,
+                user,
+                "user.created.v1",
+                {"display_name": user.display_name, "status": "ACTIVE"},
+            )
+        # Redelivery never resets a subsequently edited profile.
+        return {"user_id": str(user.id)}

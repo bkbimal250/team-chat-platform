@@ -86,9 +86,10 @@ class EventConsumer:
         return True
 
 
-def rabbit_callback(consumer: EventConsumer, channel, method, _properties, body):
+def rabbit_callback(consumer: EventConsumer, channel, method, _properties, body, loop=None):
     try:
-        asyncio.run(consumer.process(json.loads(body)))
+        work = consumer.process(json.loads(body))
+        loop.run_until_complete(work) if loop else asyncio.run(work)
     except Exception:
         channel.basic_nack(method.delivery_tag, requeue=True)
     else:

@@ -1,1 +1,4 @@
-"use client";import { useState } from "react";import { listBranches } from "../repository";export function BranchesClient(){const [q,setQ]=useState("");const rows=listBranches().filter(x=>x.name.toLowerCase().includes(q.toLowerCase()));return <><input className="rounded border p-2" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search branches"/>{rows.map(x=><p className="p-2" key={x.id}>{x.name}</p>)}</>}
+import { ResourceScreen } from "@/features/admin/resource-screen";
+export function BranchesClient() {
+  return <ResourceScreen resource="branches" />;
+}

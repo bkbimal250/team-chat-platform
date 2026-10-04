@@ -1,1 +1,63 @@
-"use client";import { ChevronDown,LogOut,Settings,User } from "lucide-react";import { useState } from "react";export function ProfileMenu(){const [open,setOpen]=useState(false);return <div className="relative"><button aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(!open)} className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">AU</span><span className="hidden text-sm md:block">Admin User</span><ChevronDown className="hidden md:block" size={14}/></button>{open&&<div className="absolute right-0 z-40 mt-2 w-52 rounded border bg-white p-2 shadow"><p className="p-2 text-sm font-medium">Admin User<small className="block text-slate-500">admin@globalchat.local</small></p>{[[User,"Profile"],[Settings,"Account Settings"],[LogOut,"Sign Out"]].map(([Icon,label])=>{const C=Icon as typeof User;return <button className="flex w-full gap-2 rounded p-2 text-sm hover:bg-slate-50" key={label as string}><C size={16}/>{label as string}</button>})}</div>}</div>}
+"use client";
+
+import Link from "next/link";
+
+import { useState } from "react";
+
+import { useAuth } from "@/features/auth/auth-provider";
+
+import { Button } from "@/components/ui/button";
+
+export function ProfileMenu() {
+  const auth = useAuth();
+  const [open, setOpen] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  return (
+    <div className="relative">
+      <Button
+        variant="ghost"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        {auth.profile?.display_name || "Your account"}
+      </Button>
+      {open && (
+        <div className="absolute right-0 z-40 mt-2 w-64 space-y-2 rounded border bg-white p-3 shadow">
+          <p className="text-sm font-medium">{auth.profile?.display_name}</p>
+          <Link
+            className="block text-sm underline"
+            href="/settings"
+            onClick={() => setOpen(false)}
+          >
+            Account settings
+          </Link>
+          {error && (
+            <p role="alert" className="text-sm text-rose-700">
+              {error}
+            </p>
+          )}
+          <Button
+            disabled={busy}
+            variant="outline"
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                await auth.logout();
+              } catch (e) {
+                setError(
+                  e instanceof Error ? e.message : "Sign-out failed. Retry.",
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Signing out…" : "Sign out"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

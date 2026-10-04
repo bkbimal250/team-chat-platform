@@ -30,6 +30,17 @@ async def allow(*_):
 
 
 @pytest.mark.asyncio
+async def test_first_delivery_receipt_initializes_counters_before_flush(monkeypatch):
+    monkeypatch.setattr(services, "authorize", allow)
+    db = Db([None])
+    p = Principal(uuid4(), uuid4(), uuid4(), uuid4())
+    state = await services.mark(db, p, uuid4(), 3, False, "local-regression")
+    assert state.last_delivered_sequence == 3
+    assert state.last_read_sequence == 0
+    assert db.added[-1].event_type == "message.delivered.v1"
+
+
+@pytest.mark.asyncio
 async def test_send_uses_trusted_principal_and_allocates_sequence(monkeypatch):
     monkeypatch.setattr(services, "authorize", allow)
     p = Principal(uuid4(), uuid4(), uuid4(), uuid4())

@@ -1,0 +1,162 @@
+{
+  "source_commit": "6fa5057d295c9616bf5f2bf44007d5ae8a83c798",
+  "canary_source_commit": "fe839197a8fcd5e06ba1e391bdd52666b345b163",
+  "canary_rollback": {
+    "arn": "arn:aws:ecs:ap-south-1:167667034490:task-definition/globalchat-production-media-api:1",
+    "cpu": "512",
+    "memory": "1024",
+    "image": "167667034490.dkr.ecr.ap-south-1.amazonaws.com/globalchat/media@sha256:3485c018a724aba930c1540b091528bbee950ccab0ef6930fe97cb822bd25669",
+    "architecture": "X86_64"
+  },
+  "local_arm64_builds": [
+    {
+      "service": "media-canary",
+      "tag": "globalchat/media:arm64-git-fe839197a8fc",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:a2fc7b29e4e228f5c632eab2cd581ac5664d3f19ad44f6787645fff56b8e94c0"
+    },
+    {
+      "service": "organization",
+      "tag": "globalchat/organization:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:a3fb35c18b3c831e8531b916cfefd8337354ecaabb3600f2162aed16db3d9d47"
+    },
+    {
+      "service": "identity",
+      "tag": "globalchat/identity:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:ac12de3f430dd5332d9010ff623a19b68a7556603ac9133dacbaac6fa09a757f"
+    },
+    {
+      "service": "user",
+      "tag": "globalchat/user:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:44bd4b78ad98b61cbfb8e215b8779f9036f2a44307363a034023f58c025a3043"
+    },
+    {
+      "service": "conversation",
+      "tag": "globalchat/conversation:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:a1320a59dbbdb697cb2e2d2d397f5fd17774a242a848cec9463ecc63fe00ac1a"
+    },
+    {
+      "service": "messaging",
+      "tag": "globalchat/messaging:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:e2c5998d6b86ce4881a59da3d6d33fccbc6867a98df4d3267032725a8f59cd43"
+    },
+    {
+      "service": "realtime",
+      "tag": "globalchat/realtime:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:95a2c87a1caa1af53d4ac9c0f92fb2ebc220ebd144a157d390cf74319ebdd8a5"
+    },
+    {
+      "service": "media",
+      "tag": "globalchat/media:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:c2e827efe37f9072ca4a640cb76ab842760f4bebd5da4f3789217f796987675b"
+    },
+    {
+      "service": "notification",
+      "tag": "globalchat/notification:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:b306e29a699dd74f932405ade7715654ee7bb3f92b6847508946b8452cf57274"
+    },
+    {
+      "service": "gateway",
+      "tag": "globalchat/gateway:arm64-git-6fa5057d295c",
+      "build_exit": 0,
+      "architecture": "arm64",
+      "id": "sha256:952a8d85eeee1f75f560a7e83377496d9f12e8fc6f23e797fdc9f87447beaf5c"
+    }
+  ],
+  "images_pushed": false,
+  "current_Fargate_monthly_USD": 246.12314999999998,
+  "stage1_after_media_promotion_USD": 232.492225,
+  "saving_after_promotion_USD": 13.63092499999999,
+  "canary_incremental_hourly_USD": 0.0072625,
+  "arm64_runtime_checks": [
+    {
+      "service": "media-canary",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "organization",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"cryptography\", \"psycopg\"], \"worker_imports\": [\"events.publishers.rabbitmq\", \"events.outbox.management.commands.publish_outbox\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "identity",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "user",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "conversation",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "messaging",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "realtime",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "media",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "notification",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"asyncpg\", \"cryptography\", \"uvloop\", \"httptools\", \"watchfiles\", \"grpc\", \"google._upb._message\"], \"worker_imports\": [\"app.consumer_runner\", \"app.outbox_runner\"], \"RSA_roundtrip\": \"PASS\"}\n"
+    },
+    {
+      "service": "gateway",
+      "exit": 0,
+      "output": "{\"architecture\": \"aarch64\", \"native_modules\": [\"pydantic_core\", \"uvloop\", \"httptools\", \"watchfiles\"], \"worker_imports\": [], \"RSA_roundtrip\": \"PASS\"}\n"
+    }
+  ],
+  "additional_worker_checks": [
+    {
+      "service": "identity",
+      "module": "app.events.worker",
+      "exit": 0,
+      "output": "additional worker module: PASS\n"
+    },
+    {
+      "service": "notification",
+      "module": "app.delivery_worker",
+      "exit": 0,
+      "output": "additional worker module: PASS\n"
+    }
+  ],
+  "regression": {
+    "local_passed": 361,
+    "local_failed": 0,
+    "live_rabbit_test_deselected": 1,
+    "source_matched_arm64_media_passed": 39,
+    "source_matched_arm64_media_failed": 0,
+    "terraform_tests_passed": 1
+  }
+}

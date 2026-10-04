@@ -29,8 +29,7 @@ async def run() -> None:
             "correlation_id": str(event.event_id),
             "payload": event.payload,
         }
-        return await asyncio.to_thread(
-            channel.basic_publish,
+        return channel.basic_publish(
             exchange="notification.events",
             routing_key=event.event_type,
             body=json.dumps(envelope).encode(),
@@ -41,7 +40,10 @@ async def run() -> None:
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
     for event in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(event, stopped.set)
+        try:
+            loop.add_signal_handler(event, stopped.set)
+        except NotImplementedError:  # Windows development retains graceful signal handling.
+            signal.signal(event, lambda *_: loop.call_soon_threadsafe(stopped.set))
     try:
         while not stopped.is_set():
             async with SessionLocal() as session:

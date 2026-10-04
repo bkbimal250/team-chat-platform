@@ -13,10 +13,23 @@ from common.services import command, lock_tenant, record, validate_fields
 
 @command
 def provision_organization(
-    *, name: str, slug: str, owner_name: str, owner_user_id, correlation_id=None
+    *,
+    name: str,
+    slug: str,
+    owner_name: str,
+    owner_user_id,
+    correlation_id=None,
+    organization_id=None,
+    email=None,
 ):
     """Operator-only command; never exposed as an unauthenticated public API."""
-    organization = Organization(name=name, slug=slug, display_name=name)
+    organization = Organization(
+        name=name,
+        slug=slug,
+        display_name=name,
+        email=email,
+        **({"id": organization_id} if organization_id else {}),
+    )
     validate_fields(organization)
     organization.save()
     OrganizationSettings.objects.create(organization=organization)

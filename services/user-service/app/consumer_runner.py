@@ -18,11 +18,15 @@ async def run() -> None:
     )
     queue = await channel.declare_queue("user.identity", durable=True)
     await queue.bind(exchange, "identity.#")
+    await queue.bind(exchange, "member.#")
     await queue.consume(handle_message, no_ack=False)
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
     for event in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(event, stopped.set)
+        try:
+            loop.add_signal_handler(event, stopped.set)
+        except NotImplementedError:  # Windows uses signal.signal instead of Unix loop handlers.
+            signal.signal(event, lambda *_: loop.call_soon_threadsafe(stopped.set))
     try:
         await stopped.wait()
     finally:

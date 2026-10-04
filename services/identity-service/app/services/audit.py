@@ -45,6 +45,11 @@ async def audit_and_event(
             correlation_id=correlation_id,
             payload={
                 "resource_id": str(aggregate_id),
+                **(
+                    {"identity_id": str(aggregate_id)}
+                    if event_type == "identity.created.v1"
+                    else {}
+                ),
                 "changed_fields": changed_fields or [],
                 "status": "ACTIVE",
             },

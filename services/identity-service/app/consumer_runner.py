@@ -1,5 +1,6 @@
 """Executable RabbitMQ consumer for Identity membership projections."""
 
+import asyncio
 import os
 import signal
 
@@ -10,14 +11,20 @@ from app.events.consumer_transport import callback
 
 
 def main() -> None:
+    loop = asyncio.new_event_loop()
     settings = get_settings()
     connection = pika.BlockingConnection(pika.URLParameters(str(settings.rabbitmq_url)))
     channel = connection.channel()
     channel.exchange_declare("organization.events", "topic", durable=True)
     channel.queue_declare("identity.membership", durable=True)
     channel.queue_bind("identity.membership", "organization.events", "member.#")
+    channel.queue_bind("identity.membership", "organization.events", "organization.#")
     channel.basic_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
-    channel.basic_consume("identity.membership", callback, auto_ack=False)
+    channel.basic_consume(
+        "identity.membership",
+        lambda ch, method, props, body: callback(ch, method, props, body, loop),
+        auto_ack=False,
+    )
     for event in (signal.SIGTERM, signal.SIGINT):
         signal.signal(event, lambda *_: connection.add_callback_threadsafe(channel.stop_consuming))
     try:
@@ -25,6 +32,7 @@ def main() -> None:
     finally:
         if connection.is_open:
             connection.close()
+        loop.close()
 
 
 if __name__ == "__main__":

@@ -1,1 +1,13 @@
-export type Branch={id:string;organizationId:string;name:string;status:"active"|"inactive"};const branches:Branch[]=[{id:"branch_mumbai",organizationId:"org_acme_india",name:"Mumbai HQ",status:"active"},{id:"branch_dubai",organizationId:"org_bimal_global",name:"Dubai Operations",status:"inactive"}];export const listBranches=()=>branches;export const listBranchesByOrganization=(id:string)=>branches.filter(x=>x.organizationId===id);
+import { apiRequest } from "@/lib/api/client";
+import type { Branch, CursorPage } from "@/lib/api/contracts";
+export const listBranches = (
+  query: Record<string, string | number | undefined> = {},
+) => apiRequest<CursorPage<Branch>>("/api/v1/branches/", { query });
+export const listBranchesByOrganization = async (id: string) => {
+  const page = await listBranches();
+  return {
+    ...page,
+    results: page.results.filter((row) => row.organization === id),
+  };
+};
+export type { Branch } from "@/lib/api/contracts";

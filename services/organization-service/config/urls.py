@@ -11,7 +11,7 @@ from apps.branches.api import BranchViewSet
 from apps.invitations.api import InvitationViewSet
 from apps.members.api import MemberViewSet
 from apps.organizations.api import OrganizationViewSet
-from apps.organizations.internal_api import identity_memberships
+from apps.organizations.internal_api import company_registration, identity_memberships
 from apps.roles.api import PermissionViewSet, RoleAssignmentViewSet, RoleViewSet
 from apps.teams.api import TeamViewSet
 
@@ -50,10 +50,13 @@ def ready(request):
 
 
 urlpatterns = [
+    path("api/internal/v1/company-registration/", company_registration),
     path("admin/", admin.site.urls),
     path("api/v1/", include(router.urls)),
     path(
-        "api/schema/", SpectacularAPIView.as_view(authentication_classes=[], permission_classes=[])
+        "api/schema/",
+        SpectacularAPIView.as_view(authentication_classes=[], permission_classes=[]),
+        name="schema",
     ),
     path("health/live", live),
     path("health/ready", ready),
@@ -74,4 +77,3 @@ if settings.ENVIRONMENT in {"local", "test"}:
             ),
         ),
     ]
-urlpatterns[2].name = "schema"

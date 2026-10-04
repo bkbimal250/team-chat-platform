@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import DomainError
-from app.db.session import get_session
+from app.db.session import command_transaction, get_session
 from app.models.models import Device, Session
 from app.schemas.api import RevokeResponse, SessionResponse
 from app.security.dependencies import Principal, current_principal
@@ -50,7 +50,7 @@ async def revoke(
     principal: Principal = Depends(current_principal),
     db: AsyncSession = Depends(get_session),
 ):
-    async with db.begin():
+    async with command_transaction(db):
         session = (
             await db.execute(
                 select(Session)

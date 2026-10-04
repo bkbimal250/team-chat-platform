@@ -290,17 +290,25 @@ class ConversationService:
             for member_id in added
         }
         for m in added:
-            db.add(
-                ConversationMember(
-                    conversation_id=c.id,
-                    organization_id=c.organization_id,
-                    member_id=m,
-                    user_id=member_users[m],
-                    role=MRole.MEMBER,
-                    added_by_member_id=actor,
+            existing = await self.mine(db, c.id, m)
+            if existing:
+                existing.status = MStatus.ACTIVE
+                existing.role = MRole.MEMBER
+                existing.left_at = None
+                existing.user_id = member_users[m]
+                existing.added_by_member_id = actor
+            else:
+                db.add(
+                    ConversationMember(
+                        conversation_id=c.id,
+                        organization_id=c.organization_id,
+                        member_id=m,
+                        user_id=member_users[m],
+                        role=MRole.MEMBER,
+                        added_by_member_id=actor,
+                    )
                 )
-            )
-            db.add(MemberState(conversation_id=c.id, member_id=m))
+                db.add(MemberState(conversation_id=c.id, member_id=m))
         for member_id in added:
             await event(
                 db,

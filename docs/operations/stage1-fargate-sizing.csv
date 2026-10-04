@@ -1,0 +1,25 @@
+process,current_vCPU,current_MiB,proposed_vCPU,proposed_MiB,reason,risk
+organization-api,0.25,512,0.25,512,Already minimum Fargate allocation; no safe smaller CPU/memory combination,No sizing change; ARM adoption for other processes is not enabled by this stage
+identity-api,0.25,512,0.25,512,Already minimum Fargate allocation; preserve authentication and RSA/provider latency headroom,No sizing change; ARM adoption for other processes is not enabled by this stage
+user-api,0.25,512,0.25,512,Already minimum Fargate allocation; no safe smaller CPU/memory combination,No sizing change; ARM adoption for other processes is not enabled by this stage
+conversation-api,0.25,512,0.25,512,Already minimum Fargate allocation; no safe smaller CPU/memory combination,No sizing change; ARM adoption for other processes is not enabled by this stage
+messaging-api,0.25,512,0.25,512,Already minimum Fargate allocation; no safe smaller CPU/memory combination,No sizing change; ARM adoption for other processes is not enabled by this stage
+media-api,0.5,1024,0.25,512,Candidate only: signing/metadata without proxied media bytes; utilization and load must be measured before promotion,Reduced CPU/memory headroom and native ARM behavior; baseline retained until native Fargate validation
+notification-api,0.25,512,0.25,512,Already minimum Fargate allocation; no safe smaller CPU/memory combination,No sizing change; ARM adoption for other processes is not enabled by this stage
+gateway-api,0.25,512,0.25,512,Already minimum Fargate allocation; retain HTTP pooling and routing headroom,No sizing change; ARM adoption for other processes is not enabled by this stage
+realtime-api,0.5,1024,0.5,1024,"Retain persistent WebSocket connection, fanout and reconnect headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+realtime-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+organization-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+identity-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+identity-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+user-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+user-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+conversation-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+conversation-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+messaging-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+messaging-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+media-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+media-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage
+notification-consumer,0.25,512,0.25,512,"Already minimum allocation; retain RabbitMQ connection, prefetch and event-processing headroom",No sizing change; ARM adoption for other processes is not enabled by this stage
+notification-delivery,0.25,512,0.25,512,Already minimum allocation; preserve persistent delivery processing and provider/retry headroom,No sizing change; ARM adoption for other processes is not enabled by this stage
+notification-outbox,0.25,512,0.25,512,"Already minimum allocation; preserve transactional outbox polling, broker confirmations and retries",No sizing change; ARM adoption for other processes is not enabled by this stage

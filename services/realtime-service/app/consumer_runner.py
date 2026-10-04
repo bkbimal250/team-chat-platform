@@ -7,6 +7,7 @@ import time
 
 import pika
 import redis
+from redis.asyncio import Redis
 
 from app.core import settings
 from app.events import EventConsumer, rabbit_callback
@@ -25,8 +26,7 @@ def build_consumer(redis_client):
     async def remote_publish(event: dict) -> None:
         payload = event["payload"]
         channel = f"realtime:instance:{payload['target_instance_id']}:deliveries"
-        await asyncio.to_thread(
-            redis_client.publish,
+        await redis_client.publish(
             channel,
             json.dumps({**payload, "organization_id": event["organization_id"]}),
         )
@@ -38,12 +38,13 @@ def build_consumer(redis_client):
 
 def _consume() -> None:
     redis_url = os.environ["REDIS_URL"]
-    redis_client = redis.Redis.from_url(redis_url)
+    redis_client = Redis.from_url(redis_url)
+    loop = asyncio.new_event_loop()
     metadata = None
     connection = None
     try:
         # Fail before RabbitMQ consumption if shared production metadata is unavailable.
-        redis_client.ping()
+        loop.run_until_complete(redis_client.ping())
         consumer, metadata = build_consumer(redis_client)
         connection = pika.BlockingConnection(pika.URLParameters(os.environ["RABBITMQ_URL"]))
         channel = connection.channel()
@@ -59,17 +60,18 @@ def _consume() -> None:
         channel.basic_consume(
             "realtime.events",
             lambda ch, method, properties, body: rabbit_callback(
-                consumer, ch, method, properties, body
+                consumer, ch, method, properties, body, loop
             ),
             auto_ack=False,
         )
         channel.start_consuming()
     finally:
         if metadata:
-            asyncio.run(metadata.remove_instance())
-        redis_client.close()
+            loop.run_until_complete(metadata.remove_instance())
+        loop.run_until_complete(redis_client.aclose())
         if connection and connection.is_open:
             connection.close()
+        loop.close()
 
 
 def main() -> None:

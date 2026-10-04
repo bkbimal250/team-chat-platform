@@ -13,9 +13,9 @@ async def process(body: bytes) -> bool:
         return await apply_membership_event(db, envelope)
 
 
-def callback(channel, method, _properties, body: bytes) -> None:
+def callback(channel, method, _properties, body: bytes, loop=None) -> None:
     try:
-        asyncio.run(process(body))
+        loop.run_until_complete(process(body)) if loop else asyncio.run(process(body))
     except Exception:
         channel.basic_nack(method.delivery_tag, requeue=True)
     else:

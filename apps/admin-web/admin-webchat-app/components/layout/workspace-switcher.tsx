@@ -1,1 +1,16 @@
-"use client";import { Building2,ChevronDown } from "lucide-react";import { useState } from "react";const options=["GlobalChat Platform","Acme India","Bimal Global","Northstar Labs"];export function WorkspaceSwitcher(){const [value,setValue]=useState(options[0]);const [open,setOpen]=useState(false);return <div className="relative hidden sm:block"><button aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(!open)} className="flex items-center gap-2 rounded border px-3 py-2 text-sm"><Building2 size={15}/>{value}<ChevronDown size={15}/></button>{open&&<div className="absolute right-0 z-40 mt-1 w-48 rounded border bg-white p-1 shadow"><>{options.map(x=><button className="block w-full rounded p-2 text-left text-sm hover:bg-slate-50" onClick={()=>{setValue(x);setOpen(false)}} key={x}>{x}</button>)}</></div>}</div>}
+"use client";
+import { useResource } from "@/lib/api/use-resource";
+import type { Organization } from "@/lib/api/contracts";
+export function WorkspaceSwitcher() {
+  const response = useResource<Organization>("/api/v1/organizations/current/");
+  return (
+    <span
+      title="Current authenticated workspace; no platform-wide workspace picker is exposed"
+      className="max-w-52 truncate text-sm text-slate-600"
+    >
+      {response.data?.display_name ||
+        response.data?.name ||
+        "Current workspace"}
+    </span>
+  );
+}

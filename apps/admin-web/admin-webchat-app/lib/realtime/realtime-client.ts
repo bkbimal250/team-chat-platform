@@ -1,1 +1,14 @@
-import type { RealtimeState } from "./realtime-types";export class RealtimeClient{state:RealtimeState=process.env.NEXT_PUBLIC_REALTIME_URL?"disconnected":"not-configured";connect(){if(!process.env.NEXT_PUBLIC_REALTIME_URL||typeof window==="undefined")return;this.state="connecting"}disconnect(){this.state="disconnected"}}
+import type { RealtimeState } from "./realtime-types";
+export class RealtimeClient {
+  state: RealtimeState = process.env.NEXT_PUBLIC_REALTIME_URL
+    ? "disconnected"
+    : "not-configured";
+  connect() {
+    if (!process.env.NEXT_PUBLIC_REALTIME_URL || typeof window === "undefined")
+      return;
+    this.state = "connecting";
+  }
+  disconnect() {
+    this.state = "disconnected";
+  }
+}

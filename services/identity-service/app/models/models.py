@@ -270,3 +270,23 @@ class OutboxEvent(Base):
     )
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str] = mapped_column(Text, default="")
+
+
+class CompanyRegistration(Base, Timestamps):
+    """Durable onboarding saga; authoritative input is never taken from verification."""
+
+    __tablename__ = "company_registrations"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    company_name: Mapped[str] = mapped_column(String(200))
+    owner_name: Mapped[str] = mapped_column(String(200))
+    email: Mapped[str] = mapped_column(String(254))
+    phone_number: Mapped[str] = mapped_column(String(32))
+    challenge_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("otp_challenges.id"), unique=True)
+    identity_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("identities.id"), unique=True)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True)
+    member_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    state: Mapped[str] = mapped_column(String(20), default="PENDING")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(64))
+    verified_code_hash: Mapped[str | None] = mapped_column(String(256))
+    resume_attempts: Mapped[int] = mapped_column(Integer, default=0)

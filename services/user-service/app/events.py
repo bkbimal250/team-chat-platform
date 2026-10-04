@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.main import (
@@ -21,7 +21,7 @@ async def consume(db: AsyncSession, event: dict) -> bool:
         return False
     event_type, payload = event["event_type"], event["payload"]
     if event_type == "identity.created.v1":
-        identity_id = uuid.UUID(str(payload["identity_id"]))
+        identity_id = uuid.UUID(str(payload.get("identity_id", payload.get("resource_id"))))
         user = await db.scalar(select(User).where(User.identity_id == identity_id))
         if user is None:
             user = User(identity_id=identity_id, display_name=payload.get("display_name", ""))
@@ -48,8 +48,19 @@ async def consume(db: AsyncSession, event: dict) -> bool:
         )
         status = payload.get("status", event_type.split(".")[1].upper())
         if row is None:
-            identity_id = uuid.UUID(str(payload["identity_id"]))
-            user = await db.scalar(select(User).where(User.identity_id == identity_id))
+            reference = payload.get("identity_id", payload.get("user_id"))
+            if reference is None:
+                db.add(
+                    ProcessedEvent(
+                        event_id=event_id, event_type=event_type, producer=event["producer"]
+                    )
+                )
+                return True
+            reference = uuid.UUID(str(reference))
+            user = await db.scalar(
+                select(User).where(or_(User.id == reference, User.identity_id == reference))
+            )
+            identity_id = user.identity_id if user else reference
             row = MembershipProjection(
                 organization_id=organization_id,
                 member_id=member_id,

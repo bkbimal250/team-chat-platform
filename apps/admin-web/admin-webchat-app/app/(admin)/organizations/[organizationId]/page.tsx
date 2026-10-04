@@ -1,1 +1,13 @@
-import { notFound } from "next/navigation";import { getOrganizationById } from "@/features/organizations/repository";import { OrganizationDetailClient } from "@/features/organizations/components/organization-detail-client";export default async function OrganizationDetail({params}:{params:Promise<{organizationId:string}>}){const {organizationId}=await params;const org=getOrganizationById(organizationId);if(!org)notFound();return <main className="mx-auto max-w-5xl p-6"><p className="text-sm text-slate-500">Organizations / {org.name}</p><h1 className="mt-2 text-2xl font-semibold">{org.name}</h1><OrganizationDetailClient/></main>}
+import { OrganizationDetailClient } from "@/features/organizations/components/organization-detail-client";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ organizationId: string }>;
+}) {
+  const { organizationId } = await params;
+  return (
+    <main className="mx-auto max-w-7xl p-4 sm:p-6">
+      <OrganizationDetailClient organizationId={organizationId} />
+    </main>
+  );
+}

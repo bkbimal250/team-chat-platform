@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.errors import DomainError
-from app.db.session import get_session
+from app.db.session import command_transaction, get_session
 from app.integrations.organization_service import OrganizationServiceClient
 from app.integrations.otp_provider import (
     DevelopmentOTPProvider,
@@ -80,7 +80,7 @@ async def otp_request(
     payload: OTPRequest, request: Request, db: AsyncSession = Depends(get_session)
 ):
     correlation_id, _ = context(request)
-    async with db.begin():
+    async with command_transaction(db):
         challenge, development_code = await otp_service(request).request(
             db, payload.phone_number, payload.purpose, client_ip(request), correlation_id
         )
@@ -93,7 +93,7 @@ async def otp_verify(
     payload: OTPVerifyRequest, request: Request, db: AsyncSession = Depends(get_session)
 ):
     correlation_id, user_agent = context(request)
-    async with db.begin():
+    async with command_transaction(db):
         challenge = await otp_service(request).verify(
             db, payload.challenge_id, payload.code, client_ip(request), correlation_id
         )
@@ -155,7 +155,7 @@ async def refresh(
 ):
     await RateLimiter(request.app.state.redis).hit(f"refresh:ip:{client_ip(request)}", 60, 3600)
     correlation_id, user_agent = context(request)
-    async with db.begin():
+    async with command_transaction(db):
         return await SessionService().refresh(
             db, payload.refresh_token, client_ip(request), user_agent, correlation_id
         )
@@ -167,7 +167,7 @@ async def logout(
     principal: Principal = Depends(current_principal),
     db: AsyncSession = Depends(get_session),
 ):
-    async with db.begin():
+    async with command_transaction(db):
         await SessionService().revoke_session(
             db, principal.session, request.state.correlation_id, client_ip(request)
         )
@@ -181,7 +181,7 @@ async def logout_all(
     db: AsyncSession = Depends(get_session),
 ):
     """Revokes all sessions, including the current session; clients must clear all credentials."""
-    async with db.begin():
+    async with command_transaction(db):
         rows = (
             (
                 await db.execute(
@@ -226,7 +226,7 @@ async def switch_context(
     identity = (
         await db.execute(select(Identity).where(Identity.id == principal.identity_id))
     ).scalar_one()
-    async with db.begin():
+    async with command_transaction(db):
         return await SessionService().create(
             db,
             identity=identity,
@@ -256,7 +256,7 @@ async def qr_create(
     payload: QRCreateRequest, request: Request, db: AsyncSession = Depends(get_session)
 ):
     await RateLimiter(request.app.state.redis).hit(f"qr:create:{payload.installation_id}", 10, 3600)
-    async with db.begin():
+    async with command_transaction(db):
         return await QRService(SessionService()).create(
             db, payload, request.state.correlation_id, client_ip(request)
         )
@@ -267,7 +267,7 @@ async def qr_status(challenge_id: UUID, request: Request, db: AsyncSession = Dep
     await RateLimiter(request.app.state.redis).hit(
         f"qr:poll:{client_ip(request)}:{challenge_id}", 60, 60
     )
-    async with db.begin():
+    async with command_transaction(db):
         challenge = await QRService(SessionService()).locked(db, challenge_id)
         return {
             "challenge_id": challenge.public_challenge_id,
@@ -287,7 +287,7 @@ async def qr_authorize(
     await RateLimiter(request.app.state.redis).hit(
         f"qr:authorize:{principal.identity_id}", 30, 3600
     )
-    async with db.begin():
+    async with command_transaction(db):
         await QRService(SessionService()).authorize(
             db,
             challenge_id,
@@ -307,7 +307,7 @@ async def qr_consume(
     db: AsyncSession = Depends(get_session),
 ):
     correlation_id, user_agent = context(request)
-    async with db.begin():
+    async with command_transaction(db):
         return await QRService(SessionService()).consume(
             db, challenge_id, payload.secret, client_ip(request), user_agent, correlation_id
         )

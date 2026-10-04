@@ -1,1 +1,8 @@
-import { BranchesClient } from "@/features/branches/components/branches-client";export default function Branches(){return <main className="mx-auto max-w-7xl p-4 sm:p-6"><h1 className="text-2xl font-semibold">Branches</h1><p className="mb-6 text-sm text-slate-500">Manage organization branches, managers and assigned members.</p><BranchesClient/></main>}
+import { BranchesClient } from "@/features/branches/components/branches-client";
+export default function Page() {
+  return (
+    <main className="mx-auto max-w-7xl p-4 sm:p-6">
+      <BranchesClient />
+    </main>
+  );
+}

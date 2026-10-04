@@ -1,5 +1,6 @@
 """Executable RabbitMQ consumer for durable Media references."""
 
+import asyncio
 import os
 import signal
 
@@ -11,6 +12,7 @@ from app.main import build_media_service
 
 
 def main() -> None:
+    loop = asyncio.new_event_loop()
     service = build_media_service(get_settings())
     connection = pika.BlockingConnection(pika.URLParameters(os.environ["RABBITMQ_URL"]))
     channel = connection.channel()
@@ -21,7 +23,9 @@ def main() -> None:
     channel.basic_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
     channel.basic_consume(
         "media.references",
-        lambda ch, method, properties, body: rabbit_callback(service, ch, method, properties, body),
+        lambda ch, method, properties, body: rabbit_callback(
+            service, ch, method, properties, body, loop
+        ),
         auto_ack=False,
     )
     for event in (signal.SIGTERM, signal.SIGINT):
@@ -31,6 +35,7 @@ def main() -> None:
     finally:
         if connection.is_open:
             connection.close()
+        loop.close()
 
 
 if __name__ == "__main__":

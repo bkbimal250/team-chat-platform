@@ -23,7 +23,11 @@ async def apply_projection(db, envelope: dict) -> bool:
     if await db.scalar(select(ProcessedEvent.id).where(ProcessedEvent.event_id == event_id)):
         return False
     payload, event_type = envelope["payload"], envelope["event_type"]
-    organization_id = UUID(str(envelope["organization_id"]))
+    organization_id = (
+        None
+        if event_type in {"user.blocked.v1", "user.unblocked.v1"}
+        else UUID(str(envelope["organization_id"]))
+    )
     if event_type.startswith("media."):
         # Old ready events did not carry authorization metadata. Never authorize from them.
         if "uploader_member_id" not in payload:
@@ -70,15 +74,21 @@ async def apply_projection(db, envelope: dict) -> bool:
     elif event_type == "user.blocked.v1":
         db.add(
             BlockProjection(
-                blocker_user_id=UUID(str(payload["blocker_user_id"])),
-                blocked_user_id=UUID(str(payload["blocked_user_id"])),
+                blocker_user_id=UUID(
+                    str(payload.get("blocker_identity_id", payload["blocker_user_id"]))
+                ),
+                blocked_user_id=UUID(
+                    str(payload.get("blocked_identity_id", payload["blocked_user_id"]))
+                ),
             )
         )
     elif event_type == "user.unblocked.v1":
         row = await db.scalar(
             select(BlockProjection).where(
-                BlockProjection.blocker_user_id == UUID(str(payload["blocker_user_id"])),
-                BlockProjection.blocked_user_id == UUID(str(payload["blocked_user_id"])),
+                BlockProjection.blocker_user_id
+                == UUID(str(payload.get("blocker_identity_id", payload["blocker_user_id"]))),
+                BlockProjection.blocked_user_id
+                == UUID(str(payload.get("blocked_identity_id", payload["blocked_user_id"]))),
             )
         )
         if row:
@@ -124,13 +134,13 @@ async def apply_projection(db, envelope: dict) -> bool:
     return True
 
 
-def consumer_callback(channel, method, _properties, body):
+def consumer_callback(channel, method, _properties, body, loop=None):
     async def process():
         async with SessionLocal.begin() as db:
             await apply_projection(db, json.loads(body))
 
     try:
-        asyncio.run(process())
+        loop.run_until_complete(process()) if loop else asyncio.run(process())
     except Exception:
         channel.basic_nack(method.delivery_tag, requeue=True)
     else:

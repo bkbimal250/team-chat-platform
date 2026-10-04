@@ -12,7 +12,10 @@ class MediaSettings(BaseSettings):
     app_env: Literal["development", "test", "staging", "production"] = "development"
     conversation_api_url: str = "http://conversation.globalchat.internal:8003"
     database_url: str = "postgresql+asyncpg://localhost/teamchat_media_db"
-    media_storage_backend: Literal["fake", "s3"] = "fake"
+    media_storage_backend: Literal["fake", "s3", "local"] = "fake"
+    local_storage_root: str = ".local-media"
+    local_storage_secret: str = ""
+    local_storage_base_url: str = "http://127.0.0.1:8005"
     aws_region: str | None = None
     media_s3_bucket: str | None = None
     media_s3_endpoint_url: str | None = None
@@ -23,6 +26,8 @@ class MediaSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_storage(self):
+        if self.media_storage_backend == "local" and len(self.local_storage_secret) < 32:
+            raise ValueError("local storage requires a minimum 32-character signing secret")
         if self.app_env == "production" and self.media_storage_backend != "s3":
             raise ValueError("production requires MEDIA_STORAGE_BACKEND=s3")
         if self.app_env == "production" and not self.jwt_public_key:

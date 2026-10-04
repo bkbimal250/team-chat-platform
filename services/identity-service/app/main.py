@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 from sqlalchemy import text
 
-from app.api.v1 import auth, devices, sessions
+from app.api.v1 import auth, devices, registration, sessions
 from app.core.config import get_settings
 from app.core.errors import DomainError, domain_error_handler
 from app.core.logging import configure_logging
@@ -92,7 +92,10 @@ async def validation_error(request: Request, exc: RequestValidationError):
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Request validation failed.",
-                "details": exc.errors(),
+                "details": [
+                    {"loc": item["loc"], "type": item["type"], "msg": "Invalid field value."}
+                    for item in exc.errors()
+                ],
                 "correlation_id": request.state.correlation_id,
             }
         },
@@ -121,5 +124,6 @@ async def ready(request: Request):
 
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(registration.router, prefix="/api/v1")
 app.include_router(devices.router, prefix="/api/v1")
 app.include_router(sessions.router, prefix="/api/v1")
