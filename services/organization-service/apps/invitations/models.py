@@ -10,6 +10,11 @@ class Invitation(TenantEntity):
         EXPIRED = "EXPIRED"
         REVOKED = "REVOKED"
 
+    recipient_name = models.CharField(max_length=200, blank=True, default="")
+    recipient_phone = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    recipient_email = models.EmailField(blank=True, default="")
+    token_hash = models.CharField(max_length=64, null=True, blank=True, unique=True)
+
     team = models.ForeignKey("teams.Team", on_delete=models.PROTECT, null=True, blank=True)
     branch = models.ForeignKey("branches.Branch", on_delete=models.PROTECT, null=True, blank=True)
     invited_by_member = models.ForeignKey(

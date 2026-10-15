@@ -18,8 +18,12 @@ async def project_message(db, event):
         kind = payload["source_kind"]
     elif kind == "conversation.summary.read.v1":
         kind = "message.read.v1"
-    org, cid = UUID(str(event["organization_id"])), UUID(payload["conversation_id"])
-    if payload.get("organization_id") and UUID(payload["organization_id"]) != org:
+    org = UUID(str(event["organization_id"])) if event.get("organization_id") else None
+    cid = UUID(payload["conversation_id"])
+    if (
+        "organization_id" in payload
+        and (UUID(payload["organization_id"]) if payload["organization_id"] else None) != org
+    ):
         raise ValueError("Message tenant mismatch")
     conversation = await db.scalar(
         select(Conversation)
@@ -30,7 +34,7 @@ async def project_message(db, event):
         raise ValueError("Conversation projection is not ready")
     if kind == "message.read.v1":
         member = UUID(payload["member_id"])
-        row = await db.get(ConversationReadProjection, (org, cid, member))
+        row = await db.get(ConversationReadProjection, (cid, member))
         if row is None:
             db.add(
                 ConversationReadProjection(
@@ -116,7 +120,7 @@ async def summaries(db, organization_id, member_id, conversation_ids):
             select(message.conversation_id, func.count())
             .outerjoin(
                 read,
-                (read.organization_id == message.organization_id)
+                (read.organization_id.is_not_distinct_from(message.organization_id))
                 & (read.conversation_id == message.conversation_id)
                 & (read.member_id == member_id),
             )
@@ -131,12 +135,19 @@ async def summaries(db, organization_id, member_id, conversation_ids):
         )
     ).all()
     result = {
-        cid: {"last_message_preview": None, "last_message_at": None, "unread_count": 0}
+        cid: {
+            "last_message_preview": None,
+            "last_message_at": None,
+            "last_message_sequence": None,
+            "unread_count": 0,
+        }
         for cid in conversation_ids
     }
     for row in previews:
         result[row.conversation_id].update(
-            last_message_preview=row.preview, last_message_at=row.created_at
+            last_message_preview=row.preview,
+            last_message_at=row.created_at,
+            last_message_sequence=row.sequence,
         )
     for cid, count in unread:
         result[cid]["unread_count"] = count

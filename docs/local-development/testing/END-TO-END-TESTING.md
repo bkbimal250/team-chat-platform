@@ -16,3 +16,8 @@ YOU DO THIS MANUALLY: log in Alice in normal browser, Bob in private browser; se
 ## Company owner onboarding
 
 See [company registration](../onboarding/COMPANY-REGISTRATION.md), [actual contracts](../onboarding/COMPANY-REGISTRATION-API.md) and [manual/automated sequence](../onboarding/COMPANY-REGISTRATION-TESTING.md). Public Gateway endpoints are POST `/api/v1/auth/registration/company/start`, `/verify`, `/resend` under that prefix. Company signup verifies phone OTP, then creates a NEW organization and real Owner membership; member invite-only policy remains intact. Registration -> OTP -> verify -> profile/current organization -> admin -> logout -> normal LOGIN OTP restores the same membership. No production deployment or real SMS was performed.
+
+
+## Secure employee onboarding (2026-10-05)
+
+The real two-context invitation/chat runner is node scripts/test-invitation-live.mjs from the admin app. It covers Owner invite -> Employee OTP -> normal session -> text/realtime/typing/receipts/unread/preview -> returning login -> revoke denial. Uses local Gateway and Rabbit only. See ../onboarding/MEMBER-INVITATION-TESTING.md.

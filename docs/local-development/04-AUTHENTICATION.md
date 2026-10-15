@@ -1,8 +1,5 @@
-Last verified: 2026-10-04. Scope: existing GlobalChat local development only.
+# Local authentication — email/password primary
 
-# Local authentication
-OTP_PROVIDER=development, APP_ENV=development, REGISTRATION_POLICY=invite_only. No SMS provider calls. Seed explicitly provisions +919000000001 (Alice) and +919000000002 (Bob), one local workspace and memberships. Seed is guarded to isolated 127.0.0.1:5434 databases; arbitrary signup remains blocked.
+Email/password is enabled by the local runner. Phone OTP is disabled for normal onboarding and login; its providers, data and tests remain. Read [the authoritative policy and rate limits](onboarding/EMAIL-PASSWORD-AUTH.md), [company signup](onboarding/COMPANY-EMAIL-REGISTRATION.md), and [employee onboarding](onboarding/MEMBER-PASSWORD-ONBOARDING.md). No OTP/SMS is sent by these flows.
 
-YOU DO THIS MANUALLY: Continue with phone, country 91, number 9000000001. Local development code is shown only in a development frontend configured with a loopback HTTP API and only when the backend returns development_code. Enter it normally. Production frontend does not display this helper.
-
-Postman request: POST /api/v1/auth/otp/request with phone_number and purpose LOGIN. Verify: challenge_id, code, device {installation_id (>=16 characters), platform WEB, device_name}. Copy tokens privately. JWT RS256 issuer identity-service / audience team-chat-platform. Refresh rotates credentials; logout revokes session. Uninvited verification returns REGISTRATION_NOT_ALLOWED. No authentication bypass.
+Identity owns normalized login email and Argon2id hashes. Existing JWT/session/device/refresh/logout architecture is shared by both methods. Email and phone verification remain false unless actually proven. Password reset is not implemented; existing OTP-only accounts are not given passwords automatically. No authentication bypass or normal-member admin access is introduced.

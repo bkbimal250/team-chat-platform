@@ -159,7 +159,7 @@ async def test_group_message_creates_logical_notifications_pending_deliveries_an
                 recipient_a_member,
                 recipient_b_member,
             }
-            assert all(row.title is None and row.body is None for row in notifications)
+            assert all(row.title and row.body and "secret" not in (row.body or "").lower() for row in notifications)
             assert len(deliveries) == 3 and {row.status for row in deliveries} == {"PENDING"}
             assert len(outbox) == 2 and {row.event_type for row in outbox} == {
                 "notification.created.v1"
@@ -396,6 +396,71 @@ async def test_cross_tenant_conversation_and_same_ids_stay_isolated():
     finally:
         await cleanup(organization_a)
         await cleanup(organization_b)
+
+
+@pytest.mark.asyncio
+async def test_mention_notification_uses_mentioned_member_ids():
+    organization_id, conversation_id = uuid4(), uuid4()
+    sender_user, sender_member = uuid4(), uuid4()
+    recipient_user, recipient_member = uuid4(), uuid4()
+    mentioned_user, mentioned_member = uuid4(), uuid4()
+    await seed_recipient(organization_id, conversation_id, sender_member, sender_user)
+    await seed_recipient(organization_id, conversation_id, recipient_member, recipient_user)
+    await seed_recipient(organization_id, conversation_id, mentioned_member, mentioned_user)
+    event = message_event(organization_id, conversation_id, sender_user, sender_member)
+    event["payload"]["mentioned_member_ids"] = [str(mentioned_member)]
+    try:
+        assert await MessageNotificationConsumer().consume(event)
+        async with SessionLocal() as session:
+            mention = await session.scalar(
+                select(Notification).where(
+                    Notification.organization_id == organization_id,
+                    Notification.recipient_member_id == mentioned_member,
+                )
+            )
+            assert mention is not None
+            assert mention.notification_type == "MENTION"
+    finally:
+        await cleanup(organization_id)
+
+
+@pytest.mark.asyncio
+async def test_reaction_notification_targets_message_author():
+    organization_id, conversation_id = uuid4(), uuid4()
+    author_user, author_member = uuid4(), uuid4()
+    reactor_user, reactor_member = uuid4(), uuid4()
+    message_id = uuid4()
+    await seed_recipient(organization_id, conversation_id, author_member, author_user)
+    await seed_recipient(organization_id, conversation_id, reactor_member, reactor_user)
+    event = {
+        "event_id": str(uuid4()),
+        "event_type": "message.reaction_added.v1",
+        "event_version": 1,
+        "organization_id": str(organization_id),
+        "correlation_id": "reaction-test",
+        "payload": {
+            "conversation_id": str(conversation_id),
+            "message_id": str(message_id),
+            "sender_user_id": str(author_user),
+            "sender_member_id": str(author_member),
+            "reactor_member_id": str(reactor_member),
+            "reactor_user_id": str(reactor_user),
+            "reaction": "👍",
+        },
+    }
+    try:
+        assert await MessageNotificationConsumer().consume(event)
+        async with SessionLocal() as session:
+            notification = await session.scalar(
+                select(Notification).where(
+                    Notification.organization_id == organization_id,
+                    Notification.recipient_member_id == author_member,
+                )
+            )
+            assert notification is not None
+            assert notification.notification_type == "REACTION"
+    finally:
+        await cleanup(organization_id)
 
 
 @pytest.mark.asyncio

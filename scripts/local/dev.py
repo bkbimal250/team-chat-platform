@@ -102,6 +102,9 @@ def prepare():
         )
         subprocess.run([interpreter("identity"), "-c", source], check=True)
     c = config()
+    if "contact_matching_secret" not in c:
+        c["contact_matching_secret"] = secrets.token_urlsafe(48)
+        (LOCAL / "config.json").write_text(json.dumps(c))
     (LOCAL / "compose.env").write_text(
         "\n".join(
             f"{k}={v}"
@@ -126,9 +129,15 @@ def env(service):
             e.pop(k, None)
     public = (LOCAL / "jwt-public.pem").read_text()
     private = (LOCAL / "jwt-private.pem").read_text()
+    if service == "identity":
+        e["CONTACT_MATCHING_SECRET"] = c["contact_matching_secret"]
+        e["ACCESS_TOKEN_TTL"] = "86400"
+        e["REFRESH_TOKEN_TTL"] = "2592000"
+    if service == "gateway":
+        e["RATE_LIMIT_ENABLED"] = "false"
     e.update(
         {
-            "APP_ENV": "development",
+            "APP_ENV": "local" if service == "gateway" else "development",
             "ENVIRONMENT": "local",
             "DJANGO_SETTINGS_MODULE": "config.settings.local",
             "SECRET_KEY": c["django_secret"],
@@ -142,13 +151,17 @@ def env(service):
             "ACCESS_TOKEN_PUBLIC_KEY": public,
             "ACCESS_TOKEN_PRIVATE_KEY": private,
             "OTP_PROVIDER": "development",
+            "AUTH_EMAIL_PASSWORD_ENABLED": "true",
+            "AUTH_PHONE_OTP_ENABLED": "false",
             "REGISTRATION_POLICY": "invite_only",
             "REDIS_URL": "redis://127.0.0.1:6380/0",
             "RABBITMQ_URL": f"amqp://globalchat_local:{quote(c['rabbit_password'], safe='')}@127.0.0.1:5672/%2F",
-            "CORS_ALLOWED_ORIGINS": "http://localhost:3000",
+            "CORS_ALLOWED_ORIGINS": "http://localhost:3000,http://localhost:3001",
+            "WEB_APP_BASE_URL": "http://localhost:3001",
             "IDENTITY_SERVICE_URL": "http://127.0.0.1:8001",
             "ORGANIZATION_SERVICE_URL": "http://127.0.0.1:8000",
             "USER_SERVICE_URL": "http://127.0.0.1:8002",
+            "MEDIA_SERVICE_URL": "http://127.0.0.1:8005",
             "CONVERSATION_API_URL": "http://127.0.0.1:8003",
             "CONVERSATION_SERVICE_URL": "http://127.0.0.1:8003",
             "INSTANCE_ID": "local-realtime-api",
@@ -165,6 +178,7 @@ def env(service):
             "AWS_EC2_METADATA_DISABLED": "true",
             "NEXT_PUBLIC_API_URL": "http://localhost:8008",
             "NEXT_PUBLIC_WS_URL": "ws://localhost:8007",
+            "REALTIME_PUBLIC_WSS_URL": "ws://127.0.0.1:8007/api/v1/realtime",
         }
     )
     for i, s in enumerate(SERVICES[:7]):
@@ -201,6 +215,8 @@ def compose(*args):
 def run(service, args, logname=None):
     handle = (LOCAL / (logname or f"{service}-command.log")).open("w")
     execution_env = env(service)
+    if "pytest" in args and service == "identity":
+        execution_env["AUTH_PHONE_OTP_ENABLED"] = "true"
     if "pytest" in args and service in DATABASES and service != "organization":
         name = "test_" + DATABASES[service]
         execution_env["DATABASE_URL"] = execution_env["DATABASE_URL"].replace(
@@ -340,13 +356,20 @@ def launch(service, label, args):
     pids = json.loads(pidfile.read_text()) if pidfile.exists() else {}
     name = service + "-" + label
     if name in pids:
-        result = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pids[name]}", "/FO", "CSV", "/NH"],
+        command = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f'(Get-CimInstance Win32_Process -Filter "ProcessId={int(pids[name])}").CommandLine',
+            ],
             capture_output=True,
             check=False,
             text=True,
-        )
-        if str(pids[name]) in result.stdout:
+        ).stdout
+        if str(folder(service)).lower() in command.lower() and all(
+            argument in command for argument in args[:2]
+        ):
             print(name, "already running")
             return
     h = (LOCAL / (name + ".log")).open("a")

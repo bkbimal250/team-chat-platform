@@ -10,7 +10,7 @@ export function ErrorState({
   retry?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-rose-100 bg-rose-50 p-6 text-center">
+    <div role="alert" className="rounded-xl border border-rose-100 bg-rose-50 p-6 text-center">
       <AlertTriangle className="mx-auto text-rose-600" />
       <h2 className="mt-2 font-semibold">{title}</h2>
       <p className="text-sm text-slate-600">{description}</p>

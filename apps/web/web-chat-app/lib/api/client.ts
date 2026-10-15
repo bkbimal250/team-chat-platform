@@ -1,3 +1,6 @@
+import { apiRequest as sessionRequest, ApiError as SessionApiError } from "@/workspace/lib/api/client";
+import { isAbortError } from "@/workspace/lib/api/abort";
+import { readSession } from "@/workspace/lib/auth/session";
 import { deviceInput } from "@/lib/auth/device";
 export class ApiError extends Error {
   constructor(
@@ -9,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "https://api.michat.in";
+const baseUrl = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL ?? "https://api.michat.in" : "/api/gateway";
 type ErrorBody = {
   code?: string;
   message?: string;
@@ -21,13 +24,23 @@ export async function apiRequest<T>(
   init: RequestInit = {},
   accessToken?: string | null,
 ): Promise<T> {
+  // Keep chat/account requests on the same single-flight rotating session client.
+  if (accessToken && typeof window !== "undefined" && readSession()?.access_token === accessToken) {
+    try { return await sessionRequest<T>(path, init); }
+    catch (error) {
+      if (isAbortError(error)) throw error;
+      if (error instanceof SessionApiError) throw new ApiError(error.code, error.message, error.status);
+      throw error;
+    }
+  }
   const headers = new Headers(init.headers);
   if (init.body) headers.set("Content-Type", "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
   let response: Response;
   try {
     response = await fetch(`${baseUrl}${path}`, { ...init, headers });
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error;
     throw new ApiError(
       "NETWORK_ERROR",
       "We could not reach GlobalChat. Check your connection and try again.",

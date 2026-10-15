@@ -1,0 +1,3 @@
+# Employee password invitation
+
+Follow [the authoritative password onboarding guide](../onboarding/MEMBER-PASSWORD-ONBOARDING.md): Owner invites by email, employee uses the private development link and chooses a password (or authenticates the existing account), then receives the assigned membership and web chat session. Logout/login restores the same membership. Verify revocation/expiry/wrong email/single-use/tenant and role restrictions. Never let the employee select tenant/role/branch/team from the acceptance body. No OTP/SMS. Older phone-bound OTP tests remain separate future-capability tests.

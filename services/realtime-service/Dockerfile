@@ -6,4 +6,5 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project --no-editable
 COPY . .
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+# Run `python -m app.consumer_runner` separately; see docs/OPERATIONS.md.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8007"]

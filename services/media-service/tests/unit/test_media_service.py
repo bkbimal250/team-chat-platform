@@ -118,7 +118,11 @@ async def test_reference_consumer_is_idempotent_and_orphan_cleanup_is_safe():
         "event_id": "event-1",
         "event_type": "message.created.v1",
         "organization_id": str(principal.organization_id),
-        "payload": {"media_id": str(media.id), "message_id": str(uuid4())},
+        "payload": {
+            "media_id": str(media.id),
+            "message_id": str(uuid4()),
+            "conversation_id": str(conversation),
+        },
     }
     assert await service.consume_message_event(created)
     assert not await service.consume_message_event(created)

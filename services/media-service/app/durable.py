@@ -11,7 +11,9 @@ from app.models import (
     MediaStatus,
     OrganizationStorageUsage,
     OutboxEvent,
+    PersonalStorageUsage,
     ProcessedEvent,
+    RevokedOrgMember,
 )
 from app.service import MediaRecord, MediaService
 
@@ -30,8 +32,18 @@ class DurableMediaService:
         ).all()
         counts: dict[UUID, int] = {}
         for reference in references:
-            service.references.add((reference.media_id, str(reference.message_id)))
+            media_row = next((row for row in rows if row.id == reference.media_id), None)
+            conversation_id = reference.conversation_id or (
+                media_row.conversation_id if media_row else None
+            )
+            if conversation_id is None:
+                continue
+            service.references.add(
+                (reference.media_id, str(reference.message_id), conversation_id)
+            )
             counts[reference.media_id] = counts.get(reference.media_id, 0) + 1
+        for row in (await session.scalars(select(RevokedOrgMember))).all():
+            service.org_membership.revoke(row.organization_id, row.member_id)
         for row in rows:
             service.media[row.id] = MediaRecord(
                 id=row.id,
@@ -64,6 +76,12 @@ class DurableMediaService:
             service.processed_events.add(str(row.event_id))
         for row in (await session.scalars(select(OrganizationStorageUsage))).all():
             service.usage[row.organization_id] = {
+                "stored_bytes": row.stored_bytes,
+                "media_count": row.media_count,
+                "reserved_bytes": row.reserved_bytes,
+            }
+        for row in (await session.scalars(select(PersonalStorageUsage))).all():
+            service.usage[("personal", row.identity_id)] = {
                 "stored_bytes": row.stored_bytes,
                 "media_count": row.media_count,
                 "reserved_bytes": row.reserved_bytes,
@@ -103,9 +121,29 @@ class DurableMediaService:
         for event_id in service.processed_events:
             await session.merge(ProcessedEvent(event_id=UUID(event_id)))
         await session.execute(delete(MediaReference))
-        for media_id, message_id in service.references:
-            session.add(MediaReference(media_id=media_id, message_id=UUID(message_id), active=True))
+        revoked_pairs = set(service.org_membership.revoked)
+        await session.execute(delete(RevokedOrgMember))
+        for organization_id, member_id in revoked_pairs:
+            session.add(
+                RevokedOrgMember(
+                    organization_id=organization_id,
+                    member_id=member_id,
+                    status="REVOKED",
+                )
+            )
+        for media_id, message_id, conversation_id in service.references:
+            session.add(
+                MediaReference(
+                    media_id=media_id,
+                    message_id=UUID(message_id),
+                    conversation_id=conversation_id,
+                    active=True,
+                )
+            )
         for organization_id, usage in service.usage.items():
+            if isinstance(organization_id, tuple):
+                await session.merge(PersonalStorageUsage(identity_id=organization_id[1], **usage))
+                continue
             await session.merge(
                 OrganizationStorageUsage(
                     organization_id=organization_id,
@@ -119,7 +157,9 @@ class DurableMediaService:
                 OutboxEvent(
                     id=UUID(event["event_id"]),
                     event_type=event["event_type"],
-                    organization_id=UUID(event["organization_id"]),
+                    organization_id=UUID(event["organization_id"])
+                    if event["organization_id"]
+                    else None,
                     aggregate_id=UUID(event["aggregate_id"]),
                     payload=json.dumps(event["payload"]),
                     correlation_id=event["correlation_id"],
@@ -167,3 +207,15 @@ class DurableMediaService:
 
     async def cleanup_orphans(self, *args):
         return await self._mutate("cleanup_orphans", *args)
+
+    async def cleanup_unreferenced_ready(self, *args):
+        return await self._mutate("cleanup_unreferenced_ready", *args)
+
+    async def run_cleanup(self, *args):
+        return await self._mutate("run_cleanup", *args)
+
+    async def consume_inbound_event(self, *args):
+        return await self._mutate("consume_inbound_event", *args)
+
+    async def consume_organization_event(self, *args):
+        return await self._mutate("consume_organization_event", *args)

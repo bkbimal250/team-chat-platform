@@ -11,8 +11,10 @@ export function memberPermissions(
     roles.filter((r) => assigned.has(r.id)).flatMap((r) => r.permissions),
   );
 }
+/**
+ * Only Identity's persistent platform grant can expose this permission.
+ * Tenant roles and assignments intentionally remain irrelevant.
+ */
 export function canUseAdmin(permissions: Set<string>): boolean {
-  return [...permissions].some((p) =>
-    /\.(create|update|manage|remove|revoke|delete)$/.test(p),
-  );
+  return permissions.has("platform.access");
 }

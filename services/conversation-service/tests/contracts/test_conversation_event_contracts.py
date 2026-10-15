@@ -12,6 +12,7 @@ from app.services import event
         "conversation.created.v1",
         "conversation.updated.v1",
         "conversation.closed.v1",
+        "conversation.deleted.v1",
         "conversation.member_added.v1",
         "conversation.member_removed.v1",
         "conversation.member_left.v1",

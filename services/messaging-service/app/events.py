@@ -13,6 +13,7 @@ from app.models import (
     ConversationMemberProjection,
     ConversationProjection,
     MediaProjection,
+    OrganizationMemberProjection,
     OutboxEvent,
     ProcessedEvent,
 )
@@ -27,9 +28,32 @@ async def apply_projection(db, envelope: dict) -> bool:
         None
         if event_type in {"user.blocked.v1", "user.unblocked.v1"}
         else UUID(str(envelope["organization_id"]))
+        if envelope.get("organization_id")
+        else None
     )
-    if event_type.startswith("media."):
-        # Old ready events did not carry authorization metadata. Never authorize from them.
+    if event_type in {"member.left.v2", "member.removed.v2", "member.reactivated.v2"}:
+        org = UUID(str(envelope["organization_id"]))
+        member = UUID(str(payload["member_id"]))
+        status = str(payload.get("status", event_type.split(".")[1].upper())).upper()
+        row = await db.scalar(
+            select(OrganizationMemberProjection).where(
+                OrganizationMemberProjection.organization_id == org,
+                OrganizationMemberProjection.member_id == member,
+            )
+        )
+        if row is None:
+            row = OrganizationMemberProjection(
+                organization_id=org,
+                member_id=member,
+                user_id=UUID(str(payload["user_id"])) if payload.get("user_id") else None,
+                status=status,
+            )
+            db.add(row)
+        else:
+            row.status = status
+            if payload.get("user_id"):
+                row.user_id = UUID(str(payload["user_id"]))
+    elif event_type.startswith("media."):
         if "uploader_member_id" not in payload:
             existing = await db.get(MediaProjection, UUID(payload["media_id"]))
             if (
@@ -129,7 +153,13 @@ async def apply_projection(db, envelope: dict) -> bool:
                 )
             )
             if row:
-                row.status = "ACTIVE" if event_type == "conversation.member_added.v1" else "REMOVED"
+                if event_type == "conversation.member_added.v1":
+                    row.status = "ACTIVE"
+                else:
+                    row.status = str(
+                        payload.get("resulting_status")
+                        or ("LEFT" if event_type == "conversation.member_left.v1" else "REMOVED")
+                    ).upper()
     db.add(ProcessedEvent(event_id=event_id, event_type=event_type, producer=envelope["producer"]))
     return True
 
@@ -164,7 +194,7 @@ class Publisher:
             "event_version": 1,
             "occurred_at": event.created_at.isoformat(),
             "producer": "messaging-service",
-            "organization_id": str(event.organization_id),
+            "organization_id": str(event.organization_id) if event.organization_id else None,
             "aggregate_id": str(event.aggregate_id),
             "correlation_id": event.correlation_id,
             "payload": event.payload,

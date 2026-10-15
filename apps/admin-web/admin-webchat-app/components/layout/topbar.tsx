@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { Bell, Menu } from "lucide-react";
 import { GlobalSearch } from "./global-search";
-import { WorkspaceSwitcher } from "./workspace-switcher";
 import { RealtimeStatus } from "./realtime-status";
 import { ProfileMenu } from "./profile-menu";
 export function Topbar({ onMenu }: { onMenu: () => void }) {
@@ -20,9 +19,9 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
       </div>
       <div className="flex items-center gap-2">
         <GlobalSearch />
-        <div className="hidden md:block">
-          <WorkspaceSwitcher />
-        </div>
+        <span className="hidden text-sm text-slate-600 md:block">
+          Platform administration
+        </span>
         <div className="hidden lg:block">
           <RealtimeStatus />
         </div>

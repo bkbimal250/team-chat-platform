@@ -6,9 +6,11 @@ import 'app/app.dart';
 import 'core/firebase/firebase_initializer.dart';
 import 'core/firebase/firebase_messaging_service.dart';
 import 'core/notifications/local_notification_service.dart';
+import 'security/e2ee/services/e2ee_foundation.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await E2eeFoundation.ensureInitialized();
   await FirebaseInitializer.initialize();
   await LocalNotificationService().initialize();
   try {

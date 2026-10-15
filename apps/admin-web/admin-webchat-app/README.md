@@ -34,3 +34,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Owner/Admin product workspace
+
+See [Owner Panel guide](../../../docs/local-development/admin/OWNER-PANEL.md), [routes](../../../docs/local-development/admin/OWNER-PANEL-ROUTES.md) and [realtime/fallback contract](../../../docs/local-development/admin/OWNER-PANEL-REALTIME.md). Local UI: http://localhost:3000/login. Browser HTTP uses the Gateway bridge; administrative updates use scoped API reconciliation. Platform administration does not open the chat WebSocket. Never put credentials in public environment variables.

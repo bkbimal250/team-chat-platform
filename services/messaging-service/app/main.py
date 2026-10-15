@@ -1,15 +1,24 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.broadcast import add_recipient, create_list, fan_out_send
 from app.core import DomainError
 from app.db import SessionLocal, get_session
 from app.models import Message, MessageReaction
-from app.schemas import EditMessage, ReactionInput, SendMessage, SequenceInput
+from app.schemas import (
+    BroadcastListIn,
+    BroadcastRecipientIn,
+    EditMessage,
+    ReactionInput,
+    SendMessage,
+    SequenceInput,
+)
 from app.security import Principal, principal
+from app.serialization import message_view, reactions_for_messages
 from app.services import authorize, event, mark, send
 
 app = FastAPI(title="messaging-service")
@@ -50,7 +59,9 @@ async def create(
     db: AsyncSession = Depends(get_session),
 ):
     async with db.begin():
-        return await send(db, p, conversation_id, body, request.headers.get("X-Correlation-ID", ""))
+        message = await send(db, p, conversation_id, body, request.headers.get("X-Correlation-ID", ""))
+    reactions = await reactions_for_messages(db, [message.id])
+    return message_view(message, reactions.get(message.id, []))
 
 
 @app.get("/api/v1/conversations/{conversation_id}/messages")
@@ -68,14 +79,35 @@ async def history(
         .where(
             Message.organization_id == p.organization_id, Message.conversation_id == conversation_id
         )
-        .order_by(Message.sequence)
+        .order_by(Message.sequence.desc())
         .limit(min(limit, 100))
     )
     if before_sequence:
         q = q.where(Message.sequence < before_sequence)
     if after_sequence:
         q = q.where(Message.sequence > after_sequence)
-    return list((await db.scalars(q)).all())
+    messages = list((await db.scalars(q)).all())
+    messages.reverse()
+    reactions = await reactions_for_messages(db, [m.id for m in messages])
+    return [message_view(m, reactions.get(m.id, [])) for m in messages]
+
+
+@app.get("/api/v1/messages/{message_id}")
+async def get_message(
+    message_id: UUID,
+    p: Principal = Depends(principal),
+    db: AsyncSession = Depends(get_session),
+):
+    message = await db.scalar(
+        select(Message).where(
+            Message.id == message_id, Message.organization_id == p.organization_id
+        )
+    )
+    if not message:
+        raise DomainError("MESSAGE_NOT_FOUND", "Message is unavailable.", 404)
+    await authorize(db, p, message.conversation_id)
+    reactions = await reactions_for_messages(db, [message.id])
+    return message_view(message, reactions.get(message.id, []))
 
 
 @app.patch("/api/v1/messages/{message_id}")
@@ -92,12 +124,26 @@ async def edit(
             .where(Message.id == message_id, Message.organization_id == p.organization_id)
             .with_for_update()
         )
-        if not m or m.sender_member_id != p.member_id or m.type != "TEXT" or m.deleted_at:
+        if not m:
             raise DomainError("MESSAGE_EDIT_FORBIDDEN", "Message cannot be edited.", 403)
-        m.text = body.text
+        await authorize(db, p, m.conversation_id)
+        if m.sender_member_id != p.member_id or m.deleted_at:
+            raise DomainError("MESSAGE_EDIT_FORBIDDEN", "Message cannot be edited.", 403)
+        if m.type == "E2EE":
+            if not body.e2ee:
+                raise DomainError("MESSAGE_EDIT_FORBIDDEN", "Message cannot be edited.", 403)
+            m.e2ee_envelope = body.e2ee.model_dump(mode="json")
+            m.text = None
+        elif m.type == "TEXT":
+            if not body.text:
+                raise DomainError("MESSAGE_EDIT_FORBIDDEN", "Message cannot be edited.", 403)
+            m.text = body.text
+        else:
+            raise DomainError("MESSAGE_EDIT_FORBIDDEN", "Message cannot be edited.", 403)
         m.edited_at = datetime.now(UTC)
         db.add(event(m, "message.edited.v1", request.headers.get("X-Correlation-ID", "")))
-        return m
+    reactions = await reactions_for_messages(db, [m.id])
+    return message_view(m, reactions.get(m.id, []))
 
 
 @app.delete("/api/v1/messages/{message_id}")
@@ -113,13 +159,18 @@ async def delete(
             .where(Message.id == message_id, Message.organization_id == p.organization_id)
             .with_for_update()
         )
-        if not m or m.sender_member_id != p.member_id:
+        if not m:
+            raise DomainError("MESSAGE_DELETE_FORBIDDEN", "Message cannot be deleted.", 403)
+        await authorize(db, p, m.conversation_id)
+        if m.sender_member_id != p.member_id:
             raise DomainError("MESSAGE_DELETE_FORBIDDEN", "Message cannot be deleted.", 403)
         m.deleted_at = datetime.now(UTC)
         m.status = "DELETED"
         m.text = None
+        m.e2ee_envelope = None
+        m.attachment = None
         db.add(event(m, "message.deleted.v1", request.headers.get("X-Correlation-ID", "")))
-        return {"status": "DELETED"}
+    return message_view(m, [])
 
 
 @app.post("/api/v1/messages/{message_id}/reactions")
@@ -159,7 +210,14 @@ async def add_reaction(
         )
         db.add(row)
         db.add(
-            event(message, "message.reaction_added.v1", request.headers.get("X-Correlation-ID", ""))
+            event(
+                message,
+                "message.reaction_added.v1",
+                request.headers.get("X-Correlation-ID", ""),
+                reactor_member_id=str(p.member_id),
+                reactor_user_id=str(p.user_id),
+                reaction=body.reaction,
+            )
         )
         return row
 
@@ -233,3 +291,46 @@ async def read(
         return await mark(
             db, p, conversation_id, body.sequence, True, request.headers.get("X-Correlation-ID", "")
         )
+
+
+@app.post("/api/v1/personal/broadcast-lists", status_code=201)
+async def create_broadcast_list(
+    body: BroadcastListIn,
+    p: Principal = Depends(principal),
+    db: AsyncSession = Depends(get_session),
+):
+    async with db.begin():
+        row = await create_list(db, p, body)
+    return {"id": str(row.id), "title": row.title}
+
+
+@app.post("/api/v1/personal/broadcast-lists/{list_id}/recipients", status_code=201)
+async def create_broadcast_recipient(
+    list_id: UUID,
+    body: BroadcastRecipientIn,
+    p: Principal = Depends(principal),
+    db: AsyncSession = Depends(get_session),
+):
+    async with db.begin():
+        row = await add_recipient(db, p, list_id, body)
+    return {
+        "id": str(row.id),
+        "contact_id": str(row.contact_id),
+        "recipient_identity_id": str(row.recipient_identity_id),
+    }
+
+
+@app.post("/api/v1/personal/broadcast-lists/{list_id}/messages", status_code=201)
+async def broadcast_messages(
+    list_id: UUID,
+    body: SendMessage,
+    request: Request,
+    authorization: str = Header(...),
+    p: Principal = Depends(principal),
+    db: AsyncSession = Depends(get_session),
+):
+    async with db.begin():
+        deliveries = await fan_out_send(
+            db, p, list_id, body, authorization, request.headers.get("X-Correlation-ID", "")
+        )
+    return {"deliveries": deliveries}

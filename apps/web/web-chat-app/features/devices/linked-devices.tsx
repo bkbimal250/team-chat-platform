@@ -2,6 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { deviceApi, LinkedDevice } from "./api";
 import { QRScanner } from "./qr-scanner";
+import { LogOut, QrCode, Smartphone } from "lucide-react";
+import { IconButton, iconSize } from "@/components/ui/icon-button";
+import { DetailScaffold } from "@/components/ui/detail-scaffold";
+import { SectionGroup } from "@/components/workspace/section-group";
+import { ActionToolbar } from "@/components/workspace/action-toolbar";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 export function LinkedDevices({
   token,
@@ -74,33 +80,24 @@ export function LinkedDevices({
       />
     );
   return (
-    <section className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-cyan-700">
-          Account security
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold">Linked devices</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Manage devices connected to your GlobalChat account.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => setScanner(true)}
-          className="rounded-xl bg-cyan-800 px-4 py-3 text-sm font-semibold text-white"
-        >
-          Link a device
-        </button>
-        <button
-          disabled={
-            !devices.some((d) => !d.is_current && d.status !== "REVOKED")
-          }
+    <DetailScaffold
+      width="narrow"
+      title="Linked devices"
+      subtitle="Manage devices connected to your GlobalChat account."
+    >
+      <ActionToolbar className="mb-4 border-0 pt-0">
+        <IconButton label="Link a device" onClick={() => setScanner(true)} className="text-aurora-primary">
+          <QrCode className={iconSize} />
+        </IconButton>
+        <IconButton
+          label="Log out other devices"
+          disabled={!devices.some((d) => !d.is_current && d.status !== "REVOKED")}
           onClick={() => setConfirm("others")}
-          className="rounded-xl border px-4 py-3 text-sm disabled:opacity-40"
+          className="text-aurora-muted"
         >
-          Log out other devices
-        </button>
-      </div>
+          <LogOut className={iconSize} />
+        </IconButton>
+      </ActionToolbar>
       {toast && (
         <p
           role="status"
@@ -124,47 +121,41 @@ export function LinkedDevices({
         <div className="h-36 animate-pulse rounded-2xl bg-slate-200" />
       )}
       {[true, false].map((current) => (
-        <div key={String(current)}>
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
-            {current ? "This device" : "Other devices"}
-          </h2>
-          <div className="space-y-3">
+        <SectionGroup key={String(current)} title={current ? "This device" : "Other devices"}>
+          <ul className="divide-y divide-aurora-border">
             {devices
               .filter((d) => d.is_current === current)
               .map((device) => (
-                <article
+                <li
                   key={device.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5"
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold">{device.device_name}</h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-aurora-muted">
                       {device.platform}
-                      {device.device_model
-                        ? ` · ${device.device_model}`
-                        : ""} · {device.status}
+                      {device.device_model ? ` · ${device.device_model}` : ""} · {device.status}
                     </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Linked {new Date(device.first_seen_at).toLocaleString()}
-                      <br />
-                      Last active{" "}
+                    <p className="mt-1 text-xs text-aurora-muted">
+                      Linked {new Date(device.first_seen_at).toLocaleString()} · Last active{" "}
                       {new Date(device.last_seen_at).toLocaleString()}
                     </p>
                   </div>
-                  <button
+                  <IconButton
+                    label="Log out device"
                     disabled={device.status === "REVOKED"}
                     onClick={() => setConfirm(device)}
-                    className="rounded-xl border px-4 py-2 text-sm text-rose-700 disabled:opacity-40"
+                    className="text-rose-600"
                   >
-                    Log out device
-                  </button>
-                </article>
+                    <LogOut className={iconSize} />
+                  </IconButton>
+                </li>
               ))}
-          </div>
-        </div>
+          </ul>
+        </SectionGroup>
       ))}
       {!loading && devices.length === 0 && (
-        <p className="text-sm text-slate-500">No linked devices found.</p>
+        <EmptyState icon={Smartphone} title="No linked devices" detail="Link a device with QR to sign in on another screen." />
       )}
       {confirm && (
         <ConfirmDialog
@@ -179,6 +170,6 @@ export function LinkedDevices({
             : "It will need to authenticate again."}
         </ConfirmDialog>
       )}
-    </section>
+    </DetailScaffold>
   );
 }

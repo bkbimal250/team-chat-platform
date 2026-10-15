@@ -21,6 +21,7 @@ async def audit_and_event(
     ip_address: str | None = None,
     user_agent: str = "",
     changed_fields: list[str] | None = None,
+    payload_extra: dict | None = None,
 ) -> None:
     session.add(
         SecurityAuditEvent(
@@ -52,6 +53,7 @@ async def audit_and_event(
                 ),
                 "changed_fields": changed_fields or [],
                 "status": "ACTIVE",
+                **(payload_extra or {}),
             },
         )
     )

@@ -6,6 +6,7 @@ export class ApiError extends Error {
     public readonly status?: number,
     public readonly code = "REQUEST_FAILED",
     public readonly fields: Record<string, string> = {},
+    public readonly retryAfter?: number,
   ) {
     super(message);
   }
@@ -90,16 +91,18 @@ async function request<T>(
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     const fields: Record<string, string> = {};
+    let retryAfter: number | undefined;
     let code = "REQUEST_FAILED",
       message =
         response.status === 403
           ? "You do not have permission to perform this action."
-          : "Request failed. Please retry.";
+          : response.status === 429 ? "Too many requests. Please wait before retrying." : response.status === 409 ? "This change conflicts with the current resource state." : response.status === 422 ? "Please check the form values." : response.status >= 500 ? "Service temporarily unavailable. Please retry." : "Request failed. Please retry.";
     if (data && typeof data === "object") {
       const issue =
         "error" in data && data.error && typeof data.error === "object"
           ? data.error
           : data;
+      if ("details" in issue && issue.details && typeof issue.details === "object" && "retry_after" in issue.details && typeof issue.details.retry_after === "number") retryAfter = issue.details.retry_after;
       if ("code" in issue && typeof issue.code === "string") code = issue.code;
       if ("message" in issue && typeof issue.message === "string")
         message = issue.message;
@@ -113,7 +116,7 @@ async function request<T>(
           .map(([k, v]) => `${k}: ${v}`)
           .join("; ");
     }
-    throw new ApiError(message, response.status, code, fields);
+    throw new ApiError(message, response.status, code, fields, retryAfter);
   }
   return data as T;
 }

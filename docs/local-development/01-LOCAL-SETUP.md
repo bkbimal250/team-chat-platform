@@ -22,4 +22,6 @@ npm ci
 # .env.local: NEXT_PUBLIC_WS_URL=ws://localhost:8007
 npm run dev -- --hostname 127.0.0.1
 ```
-Open http://localhost:3000. For backend restart: `python scripts/local/dev.py restart`. Stop only owned application processes: `python scripts/local/dev.py stop`. Infrastructure stop preserves volumes: `docker compose --env-file .local/compose.env -f docker-compose.local.yml stop`. Never use down -v for routine development.
+When admin already occupies port 3000, run main web with `npm run dev -- --hostname 127.0.0.1 --port 3001`; open http://localhost:3001. Admin runs from `apps/admin-web/admin-webchat-app` on port 3000 with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8008`. For backend restart: `python scripts/local/dev.py restart`. Stop only owned application processes: `python scripts/local/dev.py stop`. Infrastructure stop preserves volumes: `docker compose --env-file .local/compose.env -f docker-compose.local.yml stop`. Never use down -v for routine development.
+
+The managed local runner retains DevelopmentOTPProvider configuration but disables phone OTP and enables email/password. A separately started Identity process using a private Vonage `.env` can send real SMS; do not assume the provider from APP_ENV alone. Use the [ordered manual tests](manual-testing/README.md) after readiness passes.

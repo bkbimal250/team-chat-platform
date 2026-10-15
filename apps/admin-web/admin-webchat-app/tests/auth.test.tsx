@@ -19,8 +19,13 @@ export function adminFetch(
     "audit.view",
     "role.view",
   ],
+  platformPermissions: string[] | null = null,
 ) {
   return vi.fn(async (url: string) => {
+    if (url.includes("/platform/me"))
+      return platformPermissions
+        ? json({ identity_id: "identity-a", role: "SUPER_ADMIN", permissions: platformPermissions })
+        : json({ detail: "Platform permission is required." }, 403);
     if (url.includes("role-assignments"))
       return json(
         page([{ id: "assignment", member: "member-a", role: "role-a" }]),
@@ -89,11 +94,11 @@ describe("admin authorization", () => {
       </AuthProvider>,
     );
     expect(
-      await screen.findByText("Organization admin access required"),
+      await screen.findByText("Platform administration unavailable"),
     ).toBeTruthy();
     expect(screen.queryByText("Protected data")).toBeNull();
   });
-  it("allows a verified organization administrator", async () => {
+  it("rejects a verified company owner from the platform app", async () => {
     saveSession(tokens);
     vi.stubGlobal("fetch", adminFetch());
     render(
@@ -103,9 +108,22 @@ describe("admin authorization", () => {
         </AdminGuard>
       </AuthProvider>,
     );
+    expect(await screen.findByText("Platform administration unavailable")).toBeTruthy();
+    expect(screen.queryByText("Protected data")).toBeNull();
+  });
+  it("allows only a genuine platform grant", async () => {
+    saveSession(tokens);
+    vi.stubGlobal("fetch", adminFetch(undefined, ["platform.access"]));
+    render(
+      <AuthProvider>
+        <AdminGuard>
+          <p>Protected data</p>
+        </AdminGuard>
+      </AuthProvider>,
+    );
     expect(await screen.findByText("Protected data")).toBeTruthy();
   });
-  it("fails closed if role lookup cannot be authorized", async () => {
+  it("fails closed when no persistent platform grant authorizes the session", async () => {
     saveSession(tokens);
     vi.stubGlobal(
       "fetch",
@@ -119,7 +137,7 @@ describe("admin authorization", () => {
       </AuthProvider>,
     );
     expect(
-      await screen.findByText("Session validation unavailable"),
+      await screen.findByText("Platform administration unavailable"),
     ).toBeTruthy();
     expect(screen.queryByText("Protected data")).toBeNull();
   });

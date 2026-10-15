@@ -42,11 +42,13 @@ def block_event(kind, blocker, blocked, organization):
 
 class AuthDb:
     def __init__(self, conversation, member, block):
-        self.values = iter([conversation, member, block])
+        self.values = iter(
+            [SimpleNamespace(status="ACTIVE"), conversation, member, block]
+        )
         self.peers = []
 
     async def scalar(self, _):
-        return next(self.values)
+        return next(self.values, None)
 
     async def scalars(self, _):
         return SimpleNamespace(all=lambda: self.peers)

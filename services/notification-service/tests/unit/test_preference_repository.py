@@ -14,6 +14,7 @@ async def transaction():
 
 @pytest.fixture(autouse=True)
 async def dispose_engine_after_test():
+    await engine.dispose(close=False)
     yield
     await engine.dispose()
 
@@ -85,3 +86,27 @@ async def test_preference_repository_does_not_commit_uncommitted_changes():
         assert await PreferenceRepository(verification).get(organization_id, member_id) is None
     finally:
         await verification.close()
+
+
+@pytest.mark.asyncio
+async def test_personal_preferences_unique_isolated_and_rollback_safe():
+    member, other, organization = uuid4(), uuid4(), uuid4()
+    session = await transaction()
+    try:
+        repo = PreferenceRepository(session)
+        personal = await repo.upsert(None, member, push_enabled=False, preview="HIDDEN")
+        personal_id = personal.id
+        workspace = await repo.upsert(organization, member, push_enabled=True)
+        assert workspace.id != personal_id
+        assert await repo.get(None, other) is None
+        await repo.upsert(None, member, push_enabled=True, preview="FULL")
+        session.expire_all()
+        fresh = await repo.get(None, member)
+        assert fresh.id == personal_id
+        assert fresh.push_enabled and fresh.preview == "FULL"
+        assert (await repo.get(organization, member)).push_enabled
+    finally:
+        await session.rollback()
+        await session.close()
+    async with SessionLocal() as verification:
+        assert await PreferenceRepository(verification).get(None, member) is None

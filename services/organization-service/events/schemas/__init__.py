@@ -33,6 +33,7 @@ MEMBER_EVENT_TYPES_V2 = frozenset(
         "created",
         "updated",
         "activated",
+        "reactivated",
         "suspended",
         "left",
         "removed",
@@ -51,12 +52,28 @@ class ChangePayload(BaseModel):
     status: str | None = None
 
 
+class InvitationCreatedPayload(ChangePayload):
+    """Workspace invitation targeting before a member row is linked."""
+
+    invitation_id: UUID
+    recipient_phone_e164: str | None = None
+    recipient_email: str | None = None
+    recipient_user_id: UUID | None = None
+
+
 class MembershipPayload(ChangePayload):
     """Authoritative organization membership identity for downstream projections."""
 
     member_id: UUID
     user_id: UUID | None
+    identity_id: UUID | None = None
     participant_kind: Literal["HUMAN", "UNLINKED_MEMBER"]
+
+    @model_validator(mode="after")
+    def identity_reference(self):
+        if self.identity_id is None and self.user_id is not None:
+            self.identity_id = self.user_id
+        return self
 
 
 class EventEnvelope(BaseModel):
@@ -69,7 +86,7 @@ class EventEnvelope(BaseModel):
     organization_id: UUID | None
     aggregate_id: UUID
     correlation_id: str
-    payload: ChangePayload | MembershipPayload
+    payload: ChangePayload | MembershipPayload | InvitationCreatedPayload
 
     @model_validator(mode="after")
     def validate_contract(self):

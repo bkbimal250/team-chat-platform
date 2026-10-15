@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'new_group_controller.dart';
 
@@ -22,6 +23,14 @@ class NewGroupScreen extends ConsumerWidget {
                       hintText: 'Search members',
                     ),
                   ),
+                  if (s.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        s.error!,
+                        style: TextStyle(color: Theme.of(c).colorScheme.error),
+                      ),
+                    ),
                   Wrap(
                     children: s.selected
                         .map(
@@ -33,17 +42,19 @@ class NewGroupScreen extends ConsumerWidget {
                         .toList(),
                   ),
                   Expanded(
-                    child: ListView(
-                      children: s.members
-                          .map(
-                            (m) => CheckboxListTile(
-                              value: s.selected.any((x) => x.id == m.id),
-                              onChanged: (_) => ctl.toggle(m),
-                              title: Text(m.name),
-                            ),
-                          )
-                          .toList(),
-                    ),
+                    child: s.loading && s.members.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView(
+                            children: s.members
+                                .map(
+                                  (m) => CheckboxListTile(
+                                    value: s.selected.any((x) => x.id == m.id),
+                                    onChanged: (_) => ctl.toggle(m),
+                                    title: Text(m.name),
+                                  ),
+                                )
+                                .toList(),
+                          ),
                   ),
                   FilledButton(
                     onPressed: s.selected.isEmpty ? null : ctl.details,
@@ -58,6 +69,14 @@ class NewGroupScreen extends ConsumerWidget {
                     onChanged: ctl.setName,
                     decoration: const InputDecoration(labelText: 'Group name'),
                   ),
+                  if (s.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        s.error!,
+                        style: TextStyle(color: Theme.of(c).colorScheme.error),
+                      ),
+                    ),
                   const SizedBox(height: 12),
                   Text('Participants · ${s.selected.length}'),
                   Expanded(
@@ -68,13 +87,22 @@ class NewGroupScreen extends ConsumerWidget {
                     ),
                   ),
                   FilledButton(
-                    onPressed: s.name.trim().isEmpty
+                    onPressed: s.name.trim().isEmpty || s.loading
                         ? null
                         : () async {
-                            await ctl.create();
-                            if (c.mounted) Navigator.pop(c);
+                            final group = await ctl.create();
+                            if (!c.mounted) return;
+                            if (group != null) {
+                              c.push('/chat/${group.id}');
+                            }
                           },
-                    child: const Text('Create Group'),
+                    child: s.loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Create Group'),
                   ),
                 ],
               ),

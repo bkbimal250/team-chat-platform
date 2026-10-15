@@ -104,6 +104,8 @@ def test_published_message_contracts(event_type):
         type="TEXT",
         text="hello",
         reply_to_message_id=None,
+        forward_from_message_id=None,
+        forward_from_conversation_id=None,
         client_message_id=uuid4(),
         sequence=3,
         created_at=datetime.now(UTC),
@@ -141,3 +143,57 @@ def test_published_message_contracts(event_type):
         "sequence",
         "created_at",
     } <= wire["payload"].keys()
+
+
+def test_message_created_includes_mentions_when_provided():
+    message = SimpleNamespace(
+        id=uuid4(),
+        organization_id=uuid4(),
+        conversation_id=uuid4(),
+        sender_user_id=uuid4(),
+        sender_member_id=uuid4(),
+        sender_device_id=uuid4(),
+        type="TEXT",
+        text="hello @team",
+        reply_to_message_id=None,
+        forward_from_message_id=None,
+        forward_from_conversation_id=None,
+        client_message_id=uuid4(),
+        sequence=1,
+        created_at=datetime.now(UTC),
+    )
+    mention = uuid4()
+    outbox = event(message, "message.created.v1", "correlation", mentioned_member_ids=[str(mention)])
+    assert outbox.payload["mentioned_member_ids"] == [str(mention)]
+
+
+def test_reaction_event_includes_reactor_fields():
+    message = SimpleNamespace(
+        id=uuid4(),
+        organization_id=uuid4(),
+        conversation_id=uuid4(),
+        sender_user_id=uuid4(),
+        sender_member_id=uuid4(),
+        sender_device_id=uuid4(),
+        type="TEXT",
+        text="hello",
+        reply_to_message_id=None,
+        forward_from_message_id=None,
+        forward_from_conversation_id=None,
+        client_message_id=uuid4(),
+        sequence=1,
+        created_at=datetime.now(UTC),
+    )
+    reactor_user = uuid4()
+    reactor_member = uuid4()
+    outbox = event(
+        message,
+        "message.reaction_added.v1",
+        "correlation",
+        reactor_member_id=str(reactor_member),
+        reactor_user_id=str(reactor_user),
+        reaction="👍",
+    )
+    assert outbox.payload["reactor_member_id"] == str(reactor_member)
+    assert outbox.payload["reactor_user_id"] == str(reactor_user)
+    assert outbox.payload["reaction"] == "👍"

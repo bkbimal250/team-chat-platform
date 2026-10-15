@@ -28,7 +28,7 @@ async def publish_batch(channel, limit: int = 100) -> int:
                 "event_type": event.event_type,
                 "event_version": event.event_version,
                 "producer": "media-service",
-                "organization_id": str(event.organization_id),
+                "organization_id": str(event.organization_id) if event.organization_id else None,
                 "aggregate_id": str(event.aggregate_id),
                 "correlation_id": event.correlation_id,
                 "payload": json.loads(event.payload),
@@ -60,6 +60,7 @@ async def run() -> None:
             signal.signal(event, lambda *_: loop.call_soon_threadsafe(stopped.set))
     try:
         while not stopped.is_set():
+            connection.process_data_events(time_limit=0)
             if not await publish_batch(channel):
                 try:
                     await asyncio.wait_for(stopped.wait(), timeout=1)

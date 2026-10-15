@@ -32,27 +32,48 @@ def settings_values(**overrides):
         "ACCESS_TOKEN_PUBLIC_KEY": "public",
         "SERVICE_AUTH_TOKEN": "x" * 32,
         "OTP_PROVIDER": "development",
+        "CONTACT_MATCHING_SECRET": None,
     }
     values.update(overrides)
     return values
 
 
+def production_settings(**overrides):
+    values = {
+        "APP_ENV": "production",
+        "OTP_PROVIDER": "vonage_verify",
+        "CONTACT_MATCHING_SECRET": "c" * 32,
+        "ACCESS_TOKEN_PRIVATE_KEY": "production-private-key-material",
+        "ACCESS_TOKEN_PUBLIC_KEY": "production-public-key-material",
+        "VONAGE_API_KEY": "vonage-api-key",
+        "VONAGE_API_SECRET": "vonage-api-secret",
+        "VONAGE_BRAND": "GlobalChat",
+    }
+    values.update(overrides)
+    return settings_values(**values)
+
+
 def sms_settings(**overrides):
-    return Settings(
-        _env_file=None,
-        **settings_values(
-            OTP_PROVIDER="sms",
-            SMS_PROVIDER="hilite_http",
-            SMS_API_BASE_URL="https://sms.example.test/send",
-            SMS_USERNAME="test-user",
-            SMS_API_KEY="secret-api-key",
-            SMS_ROUTE="ServiceImplicit",
-            SMS_SENDER_ID="GLOBAL",
-            SMS_TEMPLATE_ID="otp-template",
-            SMS_MESSAGE_TEMPLATE="Your GlobalChat verification code is {otp}.",
-            **overrides,
-        ),
+    values = settings_values(
+        OTP_PROVIDER="sms",
+        SMS_PROVIDER="hilite_http",
+        SMS_API_BASE_URL="https://sms.example.test/send",
+        SMS_USERNAME="test-user",
+        SMS_API_KEY="secret-api-key",
+        SMS_ROUTE="ServiceImplicit",
+        SMS_SENDER_ID="GLOBAL",
+        SMS_TEMPLATE_ID="otp-template",
+        SMS_MESSAGE_TEMPLATE="Your GlobalChat verification code is {otp}.",
+        **overrides,
     )
+    if values.get("APP_ENV") in {"production", "staging"}:
+        if not values.get("CONTACT_MATCHING_SECRET"):
+            values["CONTACT_MATCHING_SECRET"] = "c" * 32
+        if values.get("ACCESS_TOKEN_PRIVATE_KEY") in {None, "private", "test-key"}:
+            values["ACCESS_TOKEN_PRIVATE_KEY"] = "production-private-key-material"
+        if values.get("ACCESS_TOKEN_PUBLIC_KEY") in {None, "public", "test-key"}:
+            values["ACCESS_TOKEN_PUBLIC_KEY"] = "production-public-key-material"
+    return Settings(_env_file=None, **values)
 
 
 def test_development_provider_allowed_outside_production():
@@ -67,7 +88,31 @@ async def test_development_provider_executes_in_development():
 
 def test_development_provider_rejected_in_production():
     with pytest.raises(ValidationError, match="production requires an external OTP provider"):
-        Settings(_env_file=None, **settings_values(APP_ENV="production"))
+        Settings(
+            _env_file=None,
+            **settings_values(
+                APP_ENV="production",
+                CONTACT_MATCHING_SECRET="c" * 32,
+                ACCESS_TOKEN_PRIVATE_KEY="production-private-key-material",
+                ACCESS_TOKEN_PUBLIC_KEY="production-public-key-material",
+            ),
+        )
+
+
+def test_production_requires_contact_matching_secret():
+    with pytest.raises(ValidationError, match="CONTACT_MATCHING_SECRET"):
+        Settings(
+            _env_file=None,
+            **settings_values(
+                APP_ENV="production",
+                OTP_PROVIDER="vonage_verify",
+                VONAGE_API_KEY="key",
+                VONAGE_API_SECRET="secret",
+                VONAGE_BRAND="GlobalChat",
+                ACCESS_TOKEN_PRIVATE_KEY="production-private-key-material",
+                ACCESS_TOKEN_PUBLIC_KEY="production-public-key-material",
+            ),
+        )
 
 
 @pytest.mark.parametrize(
@@ -84,7 +129,7 @@ def test_development_provider_rejected_in_production():
     ],
 )
 def test_sms_configuration_fails_closed_when_required_value_missing(missing):
-    values = settings_values(APP_ENV="production", OTP_PROVIDER="sms")
+    values = production_settings(OTP_PROVIDER="sms")
     values.update(
         SMS_PROVIDER="hilite_http",
         SMS_API_BASE_URL="https://sms.example.test/send",
@@ -111,16 +156,7 @@ def test_sms_provider_is_selected_without_development_fallback(monkeypatch):
 
 
 def test_vonage_verify_provider_is_selected_without_fallback(monkeypatch):
-    configured = Settings(
-        _env_file=None,
-        **settings_values(
-            APP_ENV="production",
-            OTP_PROVIDER="vonage_verify",
-            VONAGE_API_KEY="vonage-api-key",
-            VONAGE_API_SECRET="vonage-api-secret",
-            VONAGE_BRAND="GlobalChat",
-        ),
-    )
+    configured = Settings(_env_file=None, **production_settings())
     monkeypatch.setattr(auth, "get_settings", lambda: configured)
     service = auth.otp_service(
         SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(redis={})))
@@ -347,8 +383,7 @@ async def test_otp_service_maps_and_checks_external_request_id(monkeypatch):
 
 
 def test_vonage_verify_configuration_fails_closed_without_credentials():
-    values = settings_values(APP_ENV="production", OTP_PROVIDER="vonage_verify")
-    values.update(VONAGE_API_KEY="key", VONAGE_API_SECRET="secret", VONAGE_BRAND="GlobalChat")
+    values = production_settings()
     assert Settings(_env_file=None, **values).OTP_PROVIDER == "vonage_verify"
     values["VONAGE_API_SECRET"] = None
     with pytest.raises(ValidationError, match="VONAGE_API_SECRET"):

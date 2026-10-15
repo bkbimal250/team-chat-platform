@@ -30,6 +30,9 @@ class Redis:
         self.counts[key] += 1
         return self.counts[key]
 
+    async def ttl(self, key):
+        return 60 if key in self.cooldowns else 3600
+
     async def expire(self, *args):
         return True
 

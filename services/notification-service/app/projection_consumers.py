@@ -4,15 +4,26 @@ import logging
 from dataclasses import dataclass
 from uuid import UUID
 
+from sqlalchemy import select
+
 from app.db import SessionLocal
+from app.invitation_notifications import (
+    PendingInvitationRepository,
+    fulfill_pending_for_phone,
+)
+from app.fanout import NotificationFanout
+from app.models import IdentityPhoneProjection
 from app.repositories import (
+    BlockRepository,
     GlobalUserProjectionRepository,
+    NotificationDeliveryRepositoryExtensions,
     ProcessedEventRepository,
     ProjectionRepository,
 )
 
 logger = logging.getLogger(__name__)
 
+IDENTITY_EVENTS = frozenset({"identity.created.v1"})
 GLOBAL_USER_EVENTS = frozenset(
     {
         "user.created.v1",
@@ -83,7 +94,8 @@ class ProjectionEvent:
         if not isinstance(payload, dict) or not isinstance(event_version, int):
             raise UnsupportedProjectionEvent("malformed event envelope")
         supported = (
-            event_type in GLOBAL_USER_EVENTS
+            event_type in IDENTITY_EVENTS
+            or event_type in GLOBAL_USER_EVENTS
             or event_type in MEMBER_EVENTS
             or event_type in CONVERSATION_EVENTS
         )
@@ -118,10 +130,12 @@ class ProjectionConsumer:
                     return False
                 projections = ProjectionRepository(session)
                 global_users = GlobalUserProjectionRepository(session)
-                if event.event_type in GLOBAL_USER_EVENTS:
-                    await self._apply_global_user(event, global_users, projections)
+                if event.event_type in IDENTITY_EVENTS:
+                    await self._apply_identity(event, session)
+                elif event.event_type in GLOBAL_USER_EVENTS:
+                    await self._apply_global_user(event, global_users, projections, session)
                 elif event.event_type in MEMBER_EVENTS:
-                    await self._apply_membership(event, global_users, projections)
+                    await self._apply_membership(event, global_users, projections, session)
                 else:
                     await self._apply_conversation(event, projections)
                 await processed.add(event.event_id, event.event_type, event.organization_id)
@@ -131,9 +145,49 @@ class ProjectionConsumer:
         )
         return True
 
-    async def _apply_global_user(self, event, global_users, projections):
+    async def _apply_identity(self, event, session):
+        phone = event.payload.get("phone_e164")
+        identity_id = event.payload.get("identity_id")
+        if not phone or not identity_id:
+            return
+        session.add(
+            IdentityPhoneProjection(identity_id=UUID(str(identity_id)), phone_e164=str(phone))
+        )
+
+    async def _apply_global_user(self, event, global_users, projections, session):
+        blocks = BlockRepository(session)
+        if event.event_type == "user.blocked.v1":
+            await blocks.block(
+                self._uuid(event.payload, "user_id"),
+                self._uuid(event.payload, "blocked_user_id"),
+            )
+            return
+        if event.event_type == "user.unblocked.v1":
+            await blocks.unblock(
+                self._uuid(event.payload, "user_id"),
+                self._uuid(event.payload, "blocked_user_id"),
+            )
+            return
         user_id = self._uuid(event.payload, "user_id")
         await global_users.upsert(user_id)
+        identity_id = event.payload.get("identity_id")
+        if identity_id:
+            row = await session.scalar(
+                select(IdentityPhoneProjection).where(
+                    IdentityPhoneProjection.identity_id == UUID(str(identity_id))
+                )
+            )
+            if row is not None:
+                fanout = NotificationFanout(session)
+                pending_repo = PendingInvitationRepository(session)
+                await fulfill_pending_for_phone(
+                    fanout,
+                    pending_repo,
+                    projections,
+                    organization_id=None,
+                    phone_e164=row.phone_e164,
+                    user_id=user_id,
+                )
         for membership in await projections.memberships_for_user(user_id):
             if membership.status not in INACTIVE_MEMBERSHIP_STATUSES:
                 await projections.upsert_user(
@@ -143,7 +197,7 @@ class ProjectionConsumer:
                     status=membership.status,
                 )
 
-    async def _apply_membership(self, event, global_users, projections):
+    async def _apply_membership(self, event, global_users, projections, session):
         organization_id = event.organization_id
         if (
             event.payload.get("participant_kind") == "UNLINKED_MEMBER"
@@ -156,6 +210,10 @@ class ProjectionConsumer:
         await projections.upsert_membership(
             organization_id=organization_id, member_id=member_id, user_id=user_id, status=status
         )
+        if status in INACTIVE_MEMBERSHIP_STATUSES:
+            await NotificationDeliveryRepositoryExtensions.cancel_pending_for_member(
+                session, organization_id, member_id
+            )
         global_user = await global_users.get_by_user_id(user_id)
         current_user = await projections.get_user(organization_id, user_id)
         if current_user or (global_user and status not in INACTIVE_MEMBERSHIP_STATUSES):
@@ -165,6 +223,25 @@ class ProjectionConsumer:
                 display_name="",
                 status=status,
             )
+        if status in {"ACTIVE", "INVITED"}:
+            identity_id = event.payload.get("identity_id") or event.payload.get("user_id")
+            if identity_id:
+                phone_row = await session.scalar(
+                    select(IdentityPhoneProjection).where(
+                        IdentityPhoneProjection.identity_id == UUID(str(identity_id))
+                    )
+                )
+                if phone_row is not None:
+                    fanout = NotificationFanout(session)
+                    pending_repo = PendingInvitationRepository(session)
+                    await fulfill_pending_for_phone(
+                        fanout,
+                        pending_repo,
+                        projections,
+                        organization_id=organization_id,
+                        phone_e164=phone_row.phone_e164,
+                        user_id=user_id,
+                    )
 
     async def _apply_conversation(self, event, projections):
         organization_id = event.organization_id

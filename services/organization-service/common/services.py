@@ -10,7 +10,12 @@ from common.authorization import require
 from common.exceptions import DomainError
 from common.selectors import tenant_get
 from events.outbox.models import OutboxEvent
-from events.schemas import EVENT_TYPES, ChangePayload, MembershipPayload
+from events.schemas import (
+    EVENT_TYPES,
+    ChangePayload,
+    InvitationCreatedPayload,
+    MembershipPayload,
+)
 
 
 def command(function):
@@ -88,21 +93,33 @@ def record(context, instance, aggregate: str, action: str, fields=()):
     event_type = f"{aggregate}.{action}.v{version}"
     if event_type not in EVENT_TYPES:
         raise ValueError(f"Unregistered event: {event_type}")
-    payload_type = MembershipPayload if aggregate == "member" else ChangePayload
-    payload = payload_type(
-        resource_id=instance.id,
-        changed_fields=sorted(fields),
-        status=getattr(instance, "status", None),
-        **(
-            {
-                "member_id": instance.id,
-                "user_id": instance.user_id,
-                "participant_kind": "HUMAN" if instance.user_id else "UNLINKED_MEMBER",
-            }
-            if aggregate == "member"
-            else {}
-        ),
-    )
+    if aggregate == "member":
+        payload_type = MembershipPayload
+        payload = payload_type(
+            resource_id=instance.id,
+            changed_fields=sorted(fields),
+            status=getattr(instance, "status", None),
+            member_id=instance.id,
+            user_id=instance.user_id,
+            participant_kind="HUMAN" if instance.user_id else "UNLINKED_MEMBER",
+        )
+    elif aggregate == "invitation" and action == "created":
+        payload = InvitationCreatedPayload(
+            resource_id=instance.id,
+            changed_fields=sorted(fields),
+            status=getattr(instance, "status", None),
+            invitation_id=instance.id,
+            recipient_phone_e164=instance.recipient_phone or None,
+            recipient_email=instance.recipient_email or None,
+            recipient_user_id=None,
+        )
+    else:
+        payload_type = ChangePayload
+        payload = payload_type(
+            resource_id=instance.id,
+            changed_fields=sorted(fields),
+            status=getattr(instance, "status", None),
+        )
     AuditLog.objects.create(
         organization_id=context.organization_id,
         actor_user_id=context.user_id,

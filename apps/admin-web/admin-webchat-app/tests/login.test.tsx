@@ -2,7 +2,7 @@ import { it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "@/features/auth/auth-provider";
-import { Login } from "@/features/auth/login";
+import { PhoneOTPLogin as Login } from "@/features/auth/phone-otp-login";
 import { json } from "./fixtures";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 it("keeps invite-only rejection visible without auto-registration", async () => {

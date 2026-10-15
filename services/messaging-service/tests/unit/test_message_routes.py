@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from app import main
 from app.main import delete, edit
 from app.schemas import EditMessage
 from app.security import Principal
@@ -25,6 +26,9 @@ class Db:
 
     async def scalar(self, _):
         return self.value
+
+    async def scalars(self, _):
+        return SimpleNamespace(all=lambda: [])
 
     def add(self, value):
         self.added.append(value)
@@ -49,13 +53,23 @@ def message(principal):
         sender_user_id=principal.user_id,
         sender_device_id=principal.device_id,
         reply_to_message_id=None,
+        forward_from_message_id=None,
+        forward_from_conversation_id=None,
         client_message_id=uuid4(),
         status="ACTIVE",
+        attachment=None,
+        e2ee_envelope=None,
     )
 
 
 @pytest.mark.asyncio
-async def test_sender_edit_and_soft_delete_preserve_message_row_and_sequence():
+async def test_sender_edit_and_soft_delete_preserve_message_row_and_sequence(monkeypatch):
+    authorized = []
+
+    async def allow(_db, _principal, conversation_id):
+        authorized.append(conversation_id)
+
+    monkeypatch.setattr(main, "authorize", allow)
     p = Principal(uuid4(), uuid4(), uuid4(), uuid4())
     m = message(p)
     db = Db(m)
@@ -68,10 +82,15 @@ async def test_sender_edit_and_soft_delete_preserve_message_row_and_sequence():
     await delete(m.id, request(), p, db)
     assert m.deleted_at is not None and m.sequence == 7 and m.text is None
     assert db.added[-1].event_type == "message.deleted.v1"
+    assert authorized == [m.conversation_id, m.conversation_id]
 
 
 @pytest.mark.asyncio
-async def test_other_member_cannot_edit_or_delete():
+async def test_other_member_cannot_edit_or_delete(monkeypatch):
+    async def allow(*_):
+        return None
+
+    monkeypatch.setattr(main, "authorize", allow)
     owner = Principal(uuid4(), uuid4(), uuid4(), uuid4())
     other = Principal(uuid4(), uuid4(), uuid4(), owner.organization_id)
     m = message(owner)
@@ -81,3 +100,19 @@ async def test_other_member_cannot_edit_or_delete():
         await edit(m.id, EditMessage(text="x"), request(), other, Db(m))
     with pytest.raises(DomainError):
         await delete(m.id, request(), other, Db(m))
+
+
+@pytest.mark.asyncio
+async def test_removed_sender_cannot_edit_or_delete(monkeypatch):
+    from app.core import DomainError
+
+    async def deny(*_):
+        raise DomainError("CONVERSATION_FORBIDDEN", "Conversation access is unavailable.", 403)
+
+    monkeypatch.setattr(main, "authorize", deny)
+    p = Principal(uuid4(), uuid4(), uuid4(), uuid4())
+    m = message(p)
+    with pytest.raises(DomainError, match="Conversation access"):
+        await edit(m.id, EditMessage(text="x"), request(), p, Db(m))
+    with pytest.raises(DomainError, match="Conversation access"):
+        await delete(m.id, request(), p, Db(m))

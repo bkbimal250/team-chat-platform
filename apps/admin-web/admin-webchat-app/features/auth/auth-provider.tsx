@@ -6,16 +6,13 @@ import {
   useEffect,
   useState,
 } from "react";
-import { apiRequest } from "@/lib/api/client";
-import { collectPages } from "@/lib/api/pagination";
+import { ApiError, apiRequest } from "@/lib/api/client";
 import type {
-  Role,
-  RoleAssignment,
   Tokens,
   UserProfile,
 } from "@/lib/api/contracts";
 import { readSession, saveSession, clearSession } from "@/lib/auth/session";
-import { canUseAdmin, memberPermissions } from "./permissions";
+import { canUseAdmin } from "./permissions";
 type AuthState = {
   status: "loading" | "anonymous" | "ready" | "denied" | "error";
   profile: UserProfile | null;
@@ -35,27 +32,23 @@ async function loadSession(): Promise<AuthState> {
   if (!session) return { ...initial, status: "anonymous" };
   try {
     await apiRequest("/api/v1/auth/me");
-    const [roles, assignments, profile] = await Promise.all([
-      collectPages<Role>("/api/v1/roles/"),
-      collectPages<RoleAssignment>(
-        `/api/v1/role-assignments/?member=${session.member_id}`,
-      ),
-      apiRequest<UserProfile>("/api/v1/users/me"),
-    ]);
+    const grant = await apiRequest<{
+      identity_id: string;
+      role: string;
+      permissions: string[];
+    }>("/api/v1/platform/me");
     if (!readSession()) return { ...initial, status: "anonymous" };
-    const permissions = memberPermissions(
-      session.member_id,
-      roles,
-      assignments,
-    );
+    const permissions = new Set(Array.isArray(grant.permissions) ? grant.permissions : []);
     return {
       status: canUseAdmin(permissions) ? "ready" : "denied",
-      profile,
+      profile: null,
       permissions,
       error: "",
       session: readSession(),
     };
   } catch (error) {
+    if (error instanceof ApiError && error.status === 403)
+      return { ...initial, status: "denied", session: readSession() };
     return {
       ...initial,
       status: readSession() ? "error" : "anonymous",

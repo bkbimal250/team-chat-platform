@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Mic, Square, X } from "lucide-react";
+import { IconButton, iconSize } from "@/components/ui/icon-button";
 export function VoiceRecorder({
   onRecorded,
   disabled,
@@ -111,28 +113,37 @@ export function VoiceRecorder({
           <span role="status" className="text-sm text-red-600">
             ● Recording {seconds}s
           </span>
-          <button type="button" onClick={() => recorder.current?.stop()}>
-            Stop recording
-          </button>
-          <button
-            type="button"
+          <IconButton
+            label="Stop recording"
+            onClick={() => recorder.current?.stop()}
+            className="text-red-700"
+          >
+            <Square className={iconSize} />
+          </IconButton>
+          <IconButton
+            label="Cancel recording"
             onClick={() => {
               discarded.current = true;
               recorder.current?.stop();
             }}
+            className="text-aurora-muted"
           >
-            Cancel recording
-          </button>
+            <X className={iconSize} />
+          </IconButton>
         </div>
+      ) : state === "permission" ? (
+        <span role="status" className="px-2 py-2 text-sm text-cyan-800">
+          Allow microphone…
+        </span>
       ) : (
-        <button
-          type="button"
-          disabled={disabled || state === "permission"}
+        <IconButton
+          label="Record voice note"
+          disabled={disabled}
           onClick={() => void start()}
-          className="rounded-lg px-3 py-2 text-sm text-cyan-800"
+          className="text-cyan-800"
         >
-          {state === "permission" ? "Allow microphone…" : "Record voice note"}
-        </button>
+          <Mic className={iconSize} />
+        </IconButton>
       )}
       {error && (
         <p role="alert" className="text-sm text-rose-700">

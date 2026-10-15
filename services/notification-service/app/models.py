@@ -1,7 +1,18 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -14,7 +25,7 @@ class DevicePushToken(Base):
     __tablename__ = "device_push_tokens"
     __table_args__ = (UniqueConstraint("organization_id", "device_id", name="uq_push_device"),)
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
     user_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     device_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
@@ -28,12 +39,24 @@ class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
     __table_args__ = (
         UniqueConstraint("organization_id", "member_id", name="uq_notification_preferences_tenant"),
+        Index(
+            "uq_notification_preferences_personal",
+            "member_id",
+            unique=True,
+            postgresql_where=text("organization_id IS NULL"),
+        ),
     )
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     push_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     preview: Mapped[str] = mapped_column(String(16), default="FULL", server_default="FULL")
+    message_notifications: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    group_notifications: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    sound_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    vibration_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -52,15 +75,16 @@ class Notification(Base):
         ),
     )
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
-    conversation_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
-    message_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
+    conversation_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
+    message_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
     recipient_user_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     recipient_member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     notification_type: Mapped[str] = mapped_column(String(32))
     title: Mapped[str | None] = mapped_column(String(255))
     body: Mapped[str | None] = mapped_column(Text)
     preview_mode: Mapped[str] = mapped_column(String(16))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class NotificationDelivery(Base):
@@ -74,7 +98,7 @@ class NotificationDelivery(Base):
     notification_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(16))
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
     device_push_token_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
     device_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
     provider: Mapped[str] = mapped_column(String(16))
@@ -94,7 +118,7 @@ class ProcessedEvent(Base):
 class OutboxEvent(Base):
     __tablename__ = "outbox_events"
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True))
     event_type: Mapped[str] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(16), default="PENDING")
     event_id: Mapped[object] = mapped_column(UUID(as_uuid=True), unique=True, default=uuid4)
@@ -166,3 +190,42 @@ class ConversationMemberProjection(Base):
     member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     user_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     status: Mapped[str] = mapped_column(String(16))
+
+
+class ConversationMute(Base):
+    __tablename__ = "conversation_mutes"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "conversation_id",
+            "member_id",
+            name="uq_conversation_mute_member",
+        ),
+    )
+    id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True))
+    conversation_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+    user_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+    member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+
+
+class UserBlockProjection(Base):
+    __tablename__ = "user_block_projections"
+    blocker_user_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    blocked_user_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+
+
+class IdentityPhoneProjection(Base):
+    __tablename__ = "identity_phone_projections"
+    identity_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    phone_e164: Mapped[str] = mapped_column(String(32))
+
+
+class PendingInvitationNotification(Base):
+    __tablename__ = "pending_invitation_notifications"
+    invitation_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
+    recipient_phone_e164: Mapped[str | None] = mapped_column(String(32))
+    recipient_email: Mapped[str | None] = mapped_column(String(320))
+    fulfilled_user_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -68,7 +68,11 @@ async def test_processed_event_and_reference_are_durable_and_idempotent(durable)
         "event_id": str(uuid4()),
         "event_type": "message.created.v1",
         "organization_id": str(principal.organization_id),
-        "payload": {"media_id": str(media_id), "message_id": str(uuid4())},
+        "payload": {
+            "media_id": str(media_id),
+            "message_id": str(uuid4()),
+            "conversation_id": str(request.conversation_id),
+        },
     }
     assert await service.consume_message_event(event)
     rebuilt = DurableMediaService(service.storage, service.policy, sessions)

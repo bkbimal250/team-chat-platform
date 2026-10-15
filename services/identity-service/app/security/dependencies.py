@@ -30,14 +30,16 @@ async def current_principal(
         raise DomainError("NOT_AUTHENTICATED", "Authentication is required.", 401)
     claims = decode_access_token(credentials.credentials)
     try:
+        if ("org" in claims) != ("mid" in claims):
+            raise ValueError("Incomplete tenant context")
         session_id, identity_id, device_id, organization_id, member_id = (
             UUID(claims["sid"]),
             UUID(claims["sub"]),
             UUID(claims["did"]),
-            UUID(claims["org"]),
-            UUID(claims["mid"]),
+            UUID(claims["org"]) if "org" in claims else None,
+            UUID(claims["mid"]) if "mid" in claims else None,
         )
-    except (ValueError, KeyError) as exc:
+    except (TypeError, ValueError, KeyError) as exc:
         raise DomainError("ACCESS_TOKEN_INVALID", "Authentication is required.", 401) from exc
     session = (
         await db.execute(

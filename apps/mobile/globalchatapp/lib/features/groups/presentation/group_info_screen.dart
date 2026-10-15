@@ -2,14 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../components/ui/gc_loading.dart';
+import '../application/group_providers.dart';
+import '../domain/group.dart';
 import 'group_info_controller.dart';
 
-class GroupInfoScreen extends ConsumerWidget {
-  const GroupInfoScreen({super.key});
+class GroupInfoScreen extends ConsumerStatefulWidget {
+  const GroupInfoScreen({super.key, required this.conversationId});
+
+  final String conversationId;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GroupInfoScreen> createState() => _GroupInfoScreenState();
+}
+
+class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(groupInfoProvider.notifier).mount(widget.conversationId),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(groupInfoProvider);
     final controller = ref.read(groupInfoProvider.notifier);
+    if (state.loading && state.group == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Group Info')),
+        body: const GcLoading(),
+      );
+    }
+    final group = state.group;
+    if (group == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Group Info')),
+        body: Center(child: Text(state.error ?? 'Group unavailable')),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Group Info')),
       body: SafeArea(
@@ -25,21 +57,29 @@ class GroupInfoScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                state.group.name,
+                group.name,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            Center(child: Text('${state.group.members.length} members')),
+            Center(child: Text('${group.members.length} members')),
+            if (state.error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  state.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             const SizedBox(height: 12),
-            const ListTile(
-              title: Text('Media, Links & Docs'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-            Text('Members · ${state.group.members.length}'),
-            ...state.group.members.map(
+            Text('Members · ${group.members.length}'),
+            ...group.members.map(
               (member) => ListTile(
                 title: Text(member.name, overflow: TextOverflow.ellipsis),
                 subtitle: Text(member.role.name),
+                onLongPress: group.myRole == GroupRole.owner &&
+                        member.role == GroupRole.member
+                    ? () => controller.promote(member)
+                    : null,
                 trailing: state.canRemove(member)
                     ? IconButton(
                         tooltip: 'Remove member',
@@ -50,13 +90,21 @@ class GroupInfoScreen extends ConsumerWidget {
               ),
             ),
             if (state.canAdd)
-              const ListTile(
-                leading: Icon(Icons.person_add),
-                title: Text('Add member'),
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: const Text('Add members'),
+                onTap: () => _addMembers(context),
+              ),
+            if (group.myRole == GroupRole.owner)
+              OutlinedButton(
+                onPressed: state.isMutating
+                    ? null
+                    : () => _deleteGroup(context),
+                child: const Text('Delete group'),
               ),
             OutlinedButton(
               key: const Key('group_info_leave_group'),
-              onPressed: () => _leave(context),
+              onPressed: state.isMutating ? null : () => _leave(context),
               child: const Text('Leave group'),
             ),
           ],
@@ -92,6 +140,89 @@ class GroupInfoScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _addMembers(BuildContext context) async {
+    final repo = ref.read(groupRepositoryProvider);
+    final candidates = await repo.searchMembers('');
+    final existing =
+        ref.read(groupInfoProvider).group?.members.map((m) => m.id).toSet() ??
+            {};
+    final picked = <GroupMember>[];
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialog) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add members'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: candidates
+                  .where((c) => !existing.contains(c.id))
+                  .map(
+                    (c) => CheckboxListTile(
+                      value: picked.any((p) => p.id == c.id),
+                      onChanged: (v) {
+                        setState(() {
+                          if (v == true) {
+                            picked.add(c);
+                          } else {
+                            picked.removeWhere((p) => p.id == c.id);
+                          }
+                        });
+                      },
+                      title: Text(c.name),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: picked.isEmpty
+                  ? null
+                  : () async {
+                      await ref
+                          .read(groupInfoProvider.notifier)
+                          .addMembers(picked);
+                      if (dialog.mounted) Navigator.pop(dialog);
+                    },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteGroup(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Delete group?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialog, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final deleted =
+        await ref.read(groupInfoProvider.notifier).deleteGroup();
+    if (deleted && context.mounted) context.go('/home/chats');
+  }
+
   void _leave(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -108,24 +239,12 @@ class GroupInfoScreen extends ConsumerWidget {
           FilledButton(
             key: const Key('group_info_confirm_leave'),
             onPressed: () async {
-              final ok = await ProviderScope.containerOf(context)
-                  .read(groupInfoProvider.notifier)
-                  .leaveGroup();
+              final ok =
+                  await ref.read(groupInfoProvider.notifier).leaveGroup();
               if (dialog.mounted) Navigator.pop(dialog);
               if (!context.mounted) return;
               if (ok) {
-                context.go('/chats');
-              } else {
-                final error = ProviderScope.containerOf(context)
-                    .read(groupInfoProvider)
-                    .error;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      error ?? 'Unable to leave this group right now.',
-                    ),
-                  ),
-                );
+                context.go('/home/chats');
               }
             },
             child: const Text('Leave'),

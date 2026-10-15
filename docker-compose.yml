@@ -1,3 +1,4 @@
+# Partial local/dev stack (Postgres on host.docker.internal:5433). Production: deploy/hostinger/docker-compose.yml
 services:
   redis:
     image: redis:7-alpine
@@ -51,6 +52,7 @@ services:
     build: ./services/identity-service
     env_file: ./services/identity-service/.env
     environment:
+      CONTACT_MATCHING_SECRET: ${CONTACT_MATCHING_SECRET}
       DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_identity_db
       REDIS_URL: redis://redis:6379/0
       RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
@@ -116,6 +118,8 @@ services:
   user-service:
     build: ./services/user-service
     environment:
+      REDIS_URL: redis://redis:6379/0
+      IDENTITY_SERVICE_URL: http://identity-service:8001
       DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_user_db
       RABBITMQ_URL: amqp://organization_service:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
       INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
@@ -194,6 +198,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD_URLENCODED}@host.docker.internal:5433/teamchat_media_db
       MEDIA_JWT_SECRET: ${MEDIA_JWT_SECRET}
+      CONVERSATION_API_URL: ${CONVERSATION_API_URL:-http://conversation.globalchat.internal:8003}
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+      JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
     networks: [teamchat-network]
 volumes:
   teamchat-redis:

@@ -12,10 +12,18 @@ class RateLimiter:
         if value == 1:
             await self.redis.expire(key, window)
         if value > limit:
-            raise DomainError("RATE_LIMITED", "Please try again later.", 429)
+            raise DomainError(
+                "RATE_LIMITED",
+                "Too many requests. Please wait before trying again.",
+                429,
+                {"retry_after": max(1, await self.redis.ttl(key))},
+            )
 
     async def cooldown(self, key: str, ttl: int) -> None:
         if not await self.redis.set(key, "1", ex=ttl, nx=True):
             raise DomainError(
-                "OTP_RESEND_COOLDOWN", "Please wait before requesting another code.", 429
+                "OTP_RESEND_COOLDOWN",
+                "Please wait before requesting another code.",
+                429,
+                {"retry_after": max(1, await self.redis.ttl(key))},
             )

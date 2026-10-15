@@ -2,6 +2,7 @@ import asyncio
 import json
 
 from app.message_notification_consumer import UnsupportedMessageEvent
+from app.org_notification_consumer import UnsupportedOrgNotificationEvent
 from app.projection_consumers import UnsupportedProjectionEvent
 
 
@@ -24,6 +25,21 @@ async def consume_projection_delivery(consumer, channel, delivery_tag, body):
         event = json.loads(body)
         await consumer.consume(event)
     except UnsupportedProjectionEvent:
+        channel.basic_ack(delivery_tag)
+    except asyncio.CancelledError:
+        channel.basic_nack(delivery_tag, requeue=True)
+        raise
+    except Exception:
+        channel.basic_nack(delivery_tag, requeue=True)
+    else:
+        channel.basic_ack(delivery_tag)
+
+
+async def consume_org_notification_delivery(consumer, channel, delivery_tag, body):
+    try:
+        event = json.loads(body)
+        await consumer.consume(event)
+    except UnsupportedOrgNotificationEvent:
         channel.basic_ack(delivery_tag)
     except asyncio.CancelledError:
         channel.basic_nack(delivery_tag, requeue=True)

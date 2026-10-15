@@ -30,6 +30,7 @@ from app.schemas.api import (
 )
 from app.security.dependencies import Principal, current_principal
 from app.services.audit import audit_and_event
+from app.services.login_context import resolve_workspace_session_context
 from app.services.otp_service import OTPService
 from app.services.qr_service import QRService
 from app.services.rate_limit import RateLimiter
@@ -49,6 +50,8 @@ def context(request: Request) -> tuple[str, str]:
 
 def otp_service(request: Request) -> OTPService:
     settings = get_settings()
+    if not settings.AUTH_PHONE_OTP_ENABLED:
+        raise DomainError("PHONE_OTP_DISABLED", "Phone authentication is currently disabled.", 403)
     if settings.OTP_PROVIDER == "development":
         provider = DevelopmentOTPProvider()
     elif settings.OTP_PROVIDER == "sms" and settings.SMS_PROVIDER == "hilite_http":
@@ -123,26 +126,23 @@ async def otp_verify(
                 correlation_id=correlation_id,
                 identity_id=identity.id,
                 ip_address=client_ip(request),
+                payload_extra={"phone_e164": identity.phone_number}
+                if identity.phone_number
+                else None,
             )
         if identity.status != IdentityStatus.ACTIVE:
             raise DomainError("IDENTITY_INACTIVE", "Authentication is unavailable.", 403)
-        memberships = await OrganizationServiceClient().memberships(identity.id, correlation_id)
-        active = [item for item in memberships if item.status == "ACTIVE"]
-        if payload.organization_id:
-            active = [item for item in active if item.organization_id == payload.organization_id]
-        if not active:
-            raise DomainError(
-                "MEMBERSHIP_INACTIVE", "No active organization membership is available.", 403
-            )
-        selected = active[0]
+        organization_id, member_id = await resolve_workspace_session_context(
+            identity.id, payload.organization_id, correlation_id
+        )
         sessions = SessionService()
         device = await sessions.device(db, identity.id, payload.device)
         return await sessions.create(
             db,
             identity=identity,
             device=device,
-            organization_id=selected.organization_id,
-            member_id=selected.member_id,
+            organization_id=organization_id,
+            member_id=member_id,
             ip=client_ip(request),
             user_agent=user_agent,
             correlation_id=correlation_id,
@@ -153,7 +153,10 @@ async def otp_verify(
 async def refresh(
     payload: RefreshRequest, request: Request, db: AsyncSession = Depends(get_session)
 ):
-    await RateLimiter(request.app.state.redis).hit(f"refresh:ip:{client_ip(request)}", 60, 3600)
+    if get_settings().APP_ENV == "production":
+        await RateLimiter(request.app.state.redis).hit(
+            f"refresh:ip:{client_ip(request)}", 60, 3600
+        )
     correlation_id, user_agent = context(request)
     async with command_transaction(db):
         return await SessionService().refresh(
@@ -240,9 +243,19 @@ async def switch_context(
 
 
 @router.get("/me", response_model=MeResponse)
-async def me(principal: Principal = Depends(current_principal)):
+async def me(
+    principal: Principal = Depends(current_principal), db: AsyncSession = Depends(get_session)
+):
+    identity = await db.get(Identity, principal.identity_id)
     return MeResponse(
-        identity={"id": principal.identity_id},
+        identity={
+            "id": principal.identity_id,
+            "email": identity.email if identity else None,
+            "phone_number": identity.phone_number if identity else None,
+            "phone_verified": bool(identity and identity.phone_verified),
+            "email_verified": bool(identity and identity.email_verified),
+            "email_verified_at": identity.email_verified_at if identity else None,
+        },
         session={"id": principal.session.id, "device_id": principal.device.id},
         context={
             "organization_id": principal.session.organization_id,

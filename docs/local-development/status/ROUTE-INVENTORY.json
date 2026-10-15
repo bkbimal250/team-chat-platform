@@ -1,0 +1,914 @@
+[
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/audit-logs/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/audit-logs/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/branches/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/branches/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/branches/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "PATCH",
+    "path": "/api/v1/branches/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/branches/{id}/lifecycle/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/branches/{id}/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/branches/{id}/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/branches/{id}/members/{membership_id}/leave/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/branches/{id}/members/{membership_id}/primary/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/invitations/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/invitations/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/invitations/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/invitations/{id}/accept/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/invitations/{id}/resend/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/invitations/{id}/revoke/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/members/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "PATCH",
+    "path": "/api/v1/members/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/members/{id}/lifecycle/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/members/{id}/roles/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/organizations/current/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "PATCH",
+    "path": "/api/v1/organizations/current/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/organizations/current/lifecycle/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/organizations/current/settings/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "PATCH",
+    "path": "/api/v1/organizations/current/settings/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/permissions/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/role-assignments/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/roles/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/roles/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/roles/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/teams/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/teams/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/teams/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "PATCH",
+    "path": "/api/v1/teams/{id}/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/teams/{id}/lifecycle/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/v1/teams/{id}/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/teams/{id}/members/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/v1/teams/{id}/members/{membership_id}/leave/",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/internal/v1/company-registration/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "organization",
+    "method": "GET",
+    "path": "/api/internal/v1/identity-memberships/{identity_id}/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/internal/v1/invitations/validate/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/internal/v1/invitations/accept/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/internal/v1/invitations/accept-email/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "organization",
+    "method": "POST",
+    "path": "/api/internal/v1/invitations/resume/",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/otp/request",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/otp/verify",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/refresh",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/logout-all",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/context",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/api/v1/auth/me",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/qr/challenges",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/api/v1/auth/qr/challenges/{challenge_id}/status",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/qr/challenges/{challenge_id}/authorize",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/qr/challenges/{challenge_id}/consume",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/registration/company",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/password",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/registration/company/start",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/registration/company/resend",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/registration/company/verify",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/validate",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/resend",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/request",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/verify",
+    "auth": "No bearer; challenge/refresh proof where required"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/api/v1/devices",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/api/v1/devices/{device_id}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/devices/{device_id}/revoke",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "GET",
+    "path": "/api/v1/auth/sessions",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "identity",
+    "method": "POST",
+    "path": "/api/v1/auth/sessions/{session_id}/revoke",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "user",
+    "method": "POST",
+    "path": "/internal/v1/users/block-check",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "user",
+    "method": "POST",
+    "path": "/internal/v1/users/projections",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/me",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "PATCH",
+    "path": "/api/v1/users/me",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/me/preferences",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "PATCH",
+    "path": "/api/v1/users/me/preferences",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "POST",
+    "path": "/api/v1/users/{user_id}/block",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "DELETE",
+    "path": "/api/v1/users/{user_id}/block",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/me/privacy",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "PATCH",
+    "path": "/api/v1/users/me/privacy",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/me/blocked",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/search",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "GET",
+    "path": "/api/v1/users/{user_id}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "user",
+    "method": "POST",
+    "path": "/internal/v1/users/company-owner",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "user",
+    "method": "POST",
+    "path": "/internal/v1/users/provision",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "conversation",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "conversation",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/direct",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/groups",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "GET",
+    "path": "/api/v1/conversations",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "GET",
+    "path": "/api/v1/conversations/{cid}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/members",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "DELETE",
+    "path": "/api/v1/conversations/{cid}/members/{mid}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/leave",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/close",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "GET",
+    "path": "/api/v1/conversations/{cid}/members",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/members/{mid}/promote",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/members/{mid}/demote",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/api/v1/conversations/{cid}/transfer-ownership",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "PATCH",
+    "path": "/api/v1/conversations/{cid}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "PATCH",
+    "path": "/api/v1/conversations/{cid}/state",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "conversation",
+    "method": "POST",
+    "path": "/internal/v1/conversations/{cid}/authorize",
+    "auth": "Internal service token"
+  },
+  {
+    "service": "messaging",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "messaging",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "messaging",
+    "method": "POST",
+    "path": "/api/v1/conversations/{conversation_id}/messages",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "GET",
+    "path": "/api/v1/conversations/{conversation_id}/messages",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "PATCH",
+    "path": "/api/v1/messages/{message_id}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "DELETE",
+    "path": "/api/v1/messages/{message_id}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "POST",
+    "path": "/api/v1/messages/{message_id}/reactions",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "DELETE",
+    "path": "/api/v1/messages/{message_id}/reactions/{reaction}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "POST",
+    "path": "/api/v1/conversations/{conversation_id}/delivered",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "messaging",
+    "method": "POST",
+    "path": "/api/v1/conversations/{conversation_id}/read",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "PUT",
+    "path": "/local-storage/{token}",
+    "auth": "Signed capability in URL"
+  },
+  {
+    "service": "media",
+    "method": "GET",
+    "path": "/local-storage/{token}",
+    "auth": "Signed capability in URL"
+  },
+  {
+    "service": "media",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "media",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "media",
+    "method": "POST",
+    "path": "/api/v1/media/uploads",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "POST",
+    "path": "/api/v1/media/multipart",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "POST",
+    "path": "/api/v1/media/{media_id}/multipart/parts",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "GET",
+    "path": "/api/v1/media/{media_id}/multipart",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "POST",
+    "path": "/api/v1/media/{media_id}/multipart/complete",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "DELETE",
+    "path": "/api/v1/media/{media_id}/multipart",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "POST",
+    "path": "/api/v1/media/{media_id}/complete",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "GET",
+    "path": "/api/v1/media/{media_id}/download",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "media",
+    "method": "DELETE",
+    "path": "/api/v1/media/{media_id}",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "notification",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "notification",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "notification",
+    "method": "PUT",
+    "path": "/api/v1/notifications/devices/current/token",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "notification",
+    "method": "DELETE",
+    "path": "/api/v1/notifications/devices/current/token",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "notification",
+    "method": "GET",
+    "path": "/api/v1/notifications/preferences",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "notification",
+    "method": "PATCH",
+    "path": "/api/v1/notifications/preferences",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "notification",
+    "method": "GET",
+    "path": "/api/v1/notifications",
+    "auth": "Bearer access token"
+  },
+  {
+    "service": "realtime",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "realtime",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "realtime",
+    "method": "WEBSOCKET",
+    "path": "/api/v1/realtime",
+    "auth": "Access token in query; conversation authorization"
+  },
+  {
+    "service": "gateway",
+    "method": "GET",
+    "path": "/health/live",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "GET",
+    "path": "/health/ready",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "DELETE",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "GET",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "HEAD",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "PATCH",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "POST",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  },
+  {
+    "service": "gateway",
+    "method": "PUT",
+    "path": "/{path:path}",
+    "auth": "None at this layer"
+  }
+]

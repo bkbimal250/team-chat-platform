@@ -1,10 +1,12 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from app.models import (
     ConversationMemberProjection,
+    ConversationMute,
     ConversationProjection,
     DevicePushToken,
     GlobalUserProjection,
@@ -14,8 +16,15 @@ from app.models import (
     NotificationPreference,
     OutboxEvent,
     ProcessedEvent,
+    UserBlockProjection,
     UserProjection,
 )
+
+
+def _tenant_filter(column, organization_id: UUID | None):
+    if organization_id is None:
+        return column.is_(None)
+    return column == organization_id
 
 
 class PushTokenRepository:
@@ -26,7 +35,7 @@ class PushTokenRepository:
         row = (
             await self.session.execute(
                 select(DevicePushToken).where(
-                    DevicePushToken.organization_id == principal.organization_id,
+                    _tenant_filter(DevicePushToken.organization_id, principal.organization_id),
                     DevicePushToken.device_id == principal.device_id,
                     DevicePushToken.provider == request.provider,
                 )
@@ -52,7 +61,7 @@ class PushTokenRepository:
         rows = (
             await self.session.execute(
                 select(DevicePushToken).where(
-                    DevicePushToken.organization_id == principal.organization_id,
+                    _tenant_filter(DevicePushToken.organization_id, principal.organization_id),
                     DevicePushToken.device_id == principal.device_id,
                 )
             )
@@ -65,7 +74,7 @@ class PushTokenRepository:
             (
                 await self.session.execute(
                     select(DevicePushToken).where(
-                        DevicePushToken.organization_id == organization_id,
+                        _tenant_filter(DevicePushToken.organization_id, organization_id),
                         DevicePushToken.user_id == user_id,
                         DevicePushToken.enabled.is_(True),
                     )
@@ -77,7 +86,7 @@ class PushTokenRepository:
         return (
             await self.session.execute(
                 select(DevicePushToken).where(
-                    DevicePushToken.organization_id == organization_id,
+                    _tenant_filter(DevicePushToken.organization_id, organization_id),
                     DevicePushToken.id == token_id,
                 )
             )
@@ -102,25 +111,49 @@ class PreferenceRepository:
         return (
             await self.session.execute(
                 select(NotificationPreference).where(
-                    NotificationPreference.organization_id == organization_id,
+                    _tenant_filter(NotificationPreference.organization_id, organization_id),
                     NotificationPreference.member_id == member_id,
                 )
             )
         ).scalar_one_or_none()
 
-    async def upsert(self, organization_id, member_id, *, push_enabled=True, preview="FULL"):
+    async def upsert(
+        self,
+        organization_id,
+        member_id,
+        *,
+        push_enabled=True,
+        preview="FULL",
+        message_notifications=True,
+        group_notifications=True,
+        sound_enabled=True,
+        vibration_enabled=True,
+    ):
         statement = insert(NotificationPreference).values(
             organization_id=organization_id,
             member_id=member_id,
             push_enabled=push_enabled,
             preview=preview,
+            message_notifications=message_notifications,
+            group_notifications=group_notifications,
+            sound_enabled=sound_enabled,
+            vibration_enabled=vibration_enabled,
         )
         await self.session.execute(
             statement.on_conflict_do_update(
-                index_elements=("organization_id", "member_id"),
+                index_elements=("member_id",)
+                if organization_id is None
+                else ("organization_id", "member_id"),
+                index_where=NotificationPreference.organization_id.is_(None)
+                if organization_id is None
+                else None,
                 set_={
                     "push_enabled": push_enabled,
                     "preview": preview,
+                    "message_notifications": message_notifications,
+                    "group_notifications": group_notifications,
+                    "sound_enabled": sound_enabled,
+                    "vibration_enabled": vibration_enabled,
                     "updated_at": func.now(),
                 },
             )
@@ -142,11 +175,11 @@ class NotificationRepository:
         await self.session.flush()
         return row
 
-    async def get_by_id(self, organization_id: UUID, notification_id: UUID):
+    async def get_by_id(self, organization_id: UUID | None, notification_id: UUID):
         return (
             await self.session.execute(
                 select(Notification).where(
-                    Notification.organization_id == organization_id,
+                    _tenant_filter(Notification.organization_id, organization_id),
                     Notification.id == notification_id,
                 )
             )
@@ -155,16 +188,51 @@ class NotificationRepository:
     async def get_by_dedupe_identity(
         self, organization_id, message_id, recipient_member_id, notification_type
     ):
+        if message_id is None:
+            return None
         return (
             await self.session.execute(
                 select(Notification).where(
-                    Notification.organization_id == organization_id,
+                    _tenant_filter(Notification.organization_id, organization_id),
                     Notification.message_id == message_id,
                     Notification.recipient_member_id == recipient_member_id,
                     Notification.notification_type == notification_type,
                 )
             )
         ).scalar_one_or_none()
+
+    async def mark_read(self, organization_id, member_id, user_id, notification_id):
+        row = await self.get_by_id(organization_id, notification_id)
+        if row is None or row.recipient_member_id != member_id or row.recipient_user_id != user_id:
+            return None
+        row.read_at = datetime.now(UTC)
+        return row
+
+    async def mark_all_read(self, organization_id, member_id, user_id):
+        await self.session.execute(
+            update(Notification)
+            .where(
+                _tenant_filter(Notification.organization_id, organization_id),
+                Notification.recipient_member_id == member_id,
+                Notification.recipient_user_id == user_id,
+                Notification.read_at.is_(None),
+            )
+            .values(read_at=datetime.now(UTC))
+        )
+
+    async def unread_count(self, organization_id, member_id, user_id) -> int:
+        return (
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Notification)
+                .where(
+                    _tenant_filter(Notification.organization_id, organization_id),
+                    Notification.recipient_member_id == member_id,
+                    Notification.recipient_user_id == user_id,
+                    Notification.read_at.is_(None),
+                )
+            )
+        ) or 0
 
 
 class NotificationDeliveryRepository:
@@ -188,7 +256,7 @@ class NotificationDeliveryRepository:
             (
                 await self.session.execute(
                     select(NotificationDelivery.device_push_token_id).where(
-                        NotificationDelivery.organization_id == organization_id,
+                        _tenant_filter(NotificationDelivery.organization_id, organization_id),
                         NotificationDelivery.notification_id == notification_id,
                     )
                 )
@@ -284,10 +352,14 @@ class ProjectionRepository:
         )
 
     async def get_conversation(self, organization_id, conversation_id):
-        return await self._get_by(
-            ConversationProjection,
-            {"organization_id": organization_id, "conversation_id": conversation_id},
-        )
+        return (
+            await self.session.execute(
+                select(ConversationProjection).where(
+                    _tenant_filter(ConversationProjection.organization_id, organization_id),
+                    ConversationProjection.conversation_id == conversation_id,
+                )
+            )
+        ).scalar_one_or_none()
 
     async def get_user(self, organization_id, user_id):
         return await self._get_by(
@@ -431,8 +503,110 @@ class OutboxRepository:
         return (
             await self.session.execute(
                 select(OutboxEvent).where(
-                    OutboxEvent.organization_id == organization_id,
+                    _tenant_filter(OutboxEvent.organization_id, organization_id),
                     OutboxEvent.event_id == event_id,
                 )
             )
         ).scalar_one_or_none()
+
+
+class ConversationMuteRepository:
+    def __init__(self, session):
+        self.session = session
+
+    async def is_muted(self, organization_id, conversation_id, member_id) -> bool:
+        row = (
+            await self.session.execute(
+                select(ConversationMute.id).where(
+                    _tenant_filter(ConversationMute.organization_id, organization_id),
+                    ConversationMute.conversation_id == conversation_id,
+                    ConversationMute.member_id == member_id,
+                )
+            )
+        ).scalar_one_or_none()
+        return row is not None
+
+    async def mute(self, organization_id, conversation_id, user_id, member_id):
+        statement = insert(ConversationMute).values(
+            organization_id=organization_id,
+            conversation_id=conversation_id,
+            user_id=user_id,
+            member_id=member_id,
+        )
+        await self.session.execute(
+            statement.on_conflict_do_nothing(
+                index_elements=("organization_id", "conversation_id", "member_id")
+            )
+        )
+
+    async def unmute(self, organization_id, conversation_id, member_id):
+        await self.session.execute(
+            ConversationMute.__table__.delete().where(
+                _tenant_filter(ConversationMute.organization_id, organization_id),
+                ConversationMute.conversation_id == conversation_id,
+                ConversationMute.member_id == member_id,
+            )
+        )
+
+
+class BlockRepository:
+    def __init__(self, session):
+        self.session = session
+
+    async def block(self, blocker_user_id, blocked_user_id):
+        await self.session.execute(
+            insert(UserBlockProjection)
+            .values(blocker_user_id=blocker_user_id, blocked_user_id=blocked_user_id)
+            .on_conflict_do_nothing()
+        )
+
+    async def unblock(self, blocker_user_id, blocked_user_id):
+        await self.session.execute(
+            UserBlockProjection.__table__.delete().where(
+                UserBlockProjection.blocker_user_id == blocker_user_id,
+                UserBlockProjection.blocked_user_id == blocked_user_id,
+            )
+        )
+
+    async def is_blocked_either_way(self, left_user_id, right_user_id) -> bool:
+        if left_user_id == right_user_id:
+            return False
+        row = (
+            await self.session.execute(
+                select(UserBlockProjection.blocker_user_id).where(
+                    or_(
+                        and_(
+                            UserBlockProjection.blocker_user_id == left_user_id,
+                            UserBlockProjection.blocked_user_id == right_user_id,
+                        ),
+                        and_(
+                            UserBlockProjection.blocker_user_id == right_user_id,
+                            UserBlockProjection.blocked_user_id == left_user_id,
+                        ),
+                    )
+                )
+            )
+        ).scalar_one_or_none()
+        return row is not None
+
+
+class NotificationDeliveryRepositoryExtensions:
+    """Mixin-style helpers on NotificationDeliveryRepository."""
+
+    @staticmethod
+    async def cancel_pending_for_member(session, organization_id, member_id):
+        pending = ("PENDING", "RETRY_PENDING", "SENDING")
+        await session.execute(
+            update(NotificationDelivery)
+            .where(
+                _tenant_filter(NotificationDelivery.organization_id, organization_id),
+                NotificationDelivery.status.in_(pending),
+                NotificationDelivery.notification_id.in_(
+                    select(Notification.id).where(
+                        _tenant_filter(Notification.organization_id, organization_id),
+                        Notification.recipient_member_id == member_id,
+                    )
+                ),
+            )
+            .values(status="CANCELLED")
+        )

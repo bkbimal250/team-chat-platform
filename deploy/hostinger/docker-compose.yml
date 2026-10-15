@@ -1,0 +1,531 @@
+# GlobalChat production stack — Hostinger VPS (Docker Compose).
+# HTTP API and WebSocket are published only through Caddy (443/80).
+# Encrypted media bytes live in AWS S3; everything else runs on the VPS.
+
+name: globalchat-production
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-postgres-env: &postgres-env
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+
+x-db-url-sync: &db-url-sync
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432
+
+x-db-url-async: &db-url-async
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432
+
+x-rabbit: &rabbit
+  RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+
+x-internal-token: &internal-token
+  INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+  SERVICE_AUTH_TOKEN: ${SERVICE_AUTH_TOKEN}
+
+x-jwt-public: &jwt-public
+  JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+  IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      <<: *postgres-env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis_data:/data]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    <<: *restart
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: organization
+    volumes: [rabbitmq_data:/var/lib/rabbitmq]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  organization-service:
+    <<: *restart
+    build: ../../services/organization-service
+    environment:
+      <<: [*db-url-sync, *rabbit, *internal-token, *jwt-public]
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_organization_db
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-false}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      WEB_APP_BASE_URL: ${WEB_APP_BASE_URL:-https://app.example.com}
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  organization-outbox:
+    <<: *restart
+    build: ../../services/organization-service
+    command: ["python", "manage.py", "publish_outbox"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_organization_db
+      <<: [*rabbit, *internal-token]
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-false}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      organization-service: { condition: service_healthy }
+    networks: [internal]
+
+  identity-service:
+    <<: *restart
+    build: ../../services/identity-service
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
+      REDIS_URL: redis://redis:6379/0
+      <<: *rabbit
+      ACCESS_TOKEN_PRIVATE_KEY: ${ACCESS_TOKEN_PRIVATE_KEY}
+      ACCESS_TOKEN_PUBLIC_KEY: ${ACCESS_TOKEN_PUBLIC_KEY}
+      ORGANIZATION_SERVICE_URL: http://organization-service:8000
+      USER_SERVICE_URL: http://user-service:8002
+      SERVICE_AUTH_TOKEN: ${SERVICE_AUTH_TOKEN}
+      CONTACT_MATCHING_SECRET: ${CONTACT_MATCHING_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      organization-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8001/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  identity-outbox:
+    <<: *restart
+    build: ../../services/identity-service
+    command: ["python", "-m", "app.events.run_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
+      REDIS_URL: redis://redis:6379/0
+      <<: *rabbit
+    depends_on:
+      identity-service: { condition: service_healthy }
+    networks: [internal]
+
+  identity-consumer:
+    <<: *restart
+    build: ../../services/identity-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
+      REDIS_URL: redis://redis:6379/0
+      <<: *rabbit
+    depends_on:
+      identity-service: { condition: service_healthy }
+    networks: [internal]
+
+  user-service:
+    <<: *restart
+    build: ../../services/user-service
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
+      REDIS_URL: redis://redis:6379/0
+      <<: [*rabbit, *internal-token, *jwt-public]
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8002/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  user-outbox:
+    <<: *restart
+    build: ../../services/user-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
+      <<: *rabbit
+      RABBITMQ_EXCHANGE: organization.events
+    depends_on:
+      user-service: { condition: service_healthy }
+    networks: [internal]
+
+  user-consumer:
+    <<: *restart
+    build: ../../services/user-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
+      <<: *rabbit
+    depends_on:
+      user-service: { condition: service_healthy }
+    networks: [internal]
+
+  conversation-service:
+    <<: *restart
+    build: ../../services/conversation-service
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_conversation_db
+      REDIS_URL: redis://redis:6379/1
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+      ORGANIZATION_SERVICE_URL: http://organization-service:8000
+      USER_SERVICE_URL: http://user-service:8002
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8003/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  conversation-outbox:
+    <<: *restart
+    build: ../../services/conversation-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_conversation_db
+      REDIS_URL: redis://redis:6379/1
+      <<: *rabbit
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+      ORGANIZATION_SERVICE_URL: http://organization-service:8000
+      USER_SERVICE_URL: http://user-service:8002
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+    depends_on:
+      conversation-service: { condition: service_healthy }
+    networks: [internal]
+
+  conversation-consumer:
+    <<: *restart
+    build: ../../services/conversation-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_conversation_db
+      <<: *rabbit
+    depends_on:
+      conversation-service: { condition: service_healthy }
+    networks: [internal]
+
+  messaging-service:
+    <<: *restart
+    build: ../../services/messaging-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
+      <<: [*rabbit, *internal-token, *jwt-public]
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      conversation-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8004/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  messaging-outbox:
+    <<: *restart
+    build: ../../services/messaging-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
+      <<: *rabbit
+    depends_on:
+      messaging-service: { condition: service_healthy }
+    networks: [internal]
+
+  messaging-consumer:
+    <<: *restart
+    build: ../../services/messaging-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
+      <<: *rabbit
+    depends_on:
+      messaging-service: { condition: service_healthy }
+    networks: [internal]
+
+  media-service:
+    <<: *restart
+    build: ../../services/media-service
+    environment:
+      APP_ENV: production
+      MEDIA_STORAGE_BACKEND: s3
+      AWS_REGION: ${AWS_REGION}
+      MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MEDIA_S3_ENDPOINT_URL: ${MEDIA_S3_ENDPOINT_URL:-}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_media_db
+      CONVERSATION_API_URL: http://conversation-service:8003
+      INTERNAL_SERVICE_TOKEN: ${SERVICE_AUTH_TOKEN}
+      JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      conversation-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8005/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  media-outbox:
+    <<: *restart
+    build: ../../services/media-service
+    command: ["python", "-m", "app.outbox_runner"]
+    environment:
+      APP_ENV: production
+      MEDIA_STORAGE_BACKEND: s3
+      AWS_REGION: ${AWS_REGION}
+      MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_media_db
+      <<: *rabbit
+    depends_on:
+      media-service: { condition: service_healthy }
+    networks: [internal]
+
+  media-consumer:
+    <<: *restart
+    build: ../../services/media-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      APP_ENV: production
+      MEDIA_STORAGE_BACKEND: s3
+      AWS_REGION: ${AWS_REGION}
+      MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_media_db
+      <<: *rabbit
+    depends_on:
+      media-service: { condition: service_healthy }
+    networks: [internal]
+
+  notification-api:
+    <<: *restart
+    build: ../../services/notification-service
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8006"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
+      <<: *jwt-public
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8006/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  notification-consumer:
+    <<: *restart
+    build: ../../services/notification-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
+      <<: *rabbit
+    depends_on:
+      notification-api: { condition: service_healthy }
+    networks: [internal]
+
+  notification-delivery:
+    <<: *restart
+    build: ../../services/notification-service
+    command: ["python", "-m", "app.delivery_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
+      <<: *rabbit
+    depends_on:
+      notification-api: { condition: service_healthy }
+    networks: [internal]
+
+  realtime-api:
+    <<: *restart
+    build: ../../services/realtime-service
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8007"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+      INSTANCE_ID: realtime-1
+    depends_on:
+      redis: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8007/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  realtime-consumer:
+    <<: *restart
+    build: ../../services/realtime-service
+    command: ["python", "-m", "app.consumer_runner"]
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
+      REDIS_URL: redis://redis:6379/0
+      INSTANCE_ID: realtime-1
+    depends_on:
+      realtime-api: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    networks: [internal]
+
+  gateway-service:
+    <<: *restart
+    build: ../../services/gateway-service
+    environment:
+      APP_ENV: production
+      ORGANIZATION_URL: http://organization-service:8000
+      IDENTITY_URL: http://identity-service:8001
+      USER_URL: http://user-service:8002
+      CONVERSATION_URL: http://conversation-service:8003
+      MESSAGING_URL: http://messaging-service:8004
+      MEDIA_URL: http://media-service:8005
+      NOTIFICATION_URL: http://notification-api:8006
+      REALTIME_URL: http://realtime-api:8007
+      REALTIME_PUBLIC_WSS_URL: ${REALTIME_PUBLIC_WSS_URL}
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-false}
+    depends_on:
+      organization-service: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
+      user-service: { condition: service_healthy }
+      conversation-service: { condition: service_healthy }
+      messaging-service: { condition: service_healthy }
+      media-service: { condition: service_healthy }
+      notification-api: { condition: service_healthy }
+    networks: [internal]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8008/health/ready'', timeout=3)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+      WS_DOMAIN: ${WS_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      gateway-service: { condition: service_healthy }
+      realtime-api: { condition: service_healthy }
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  caddy_data:
+  caddy_config:

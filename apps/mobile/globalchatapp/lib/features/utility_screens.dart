@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../components/ui/gc_empty_state.dart';
+
 class ListScreen extends StatelessWidget {
   const ListScreen({super.key, required this.title, required this.items});
   final String title;
@@ -8,7 +10,13 @@ class ListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext c) => Scaffold(
     appBar: AppBar(title: Text(title)),
-    body: ListView.separated(
+    body: items.isEmpty
+        ? GcEmptyState(
+            icon: Icons.inbox_outlined,
+            title: 'Nothing here yet',
+            message: 'This screen will load data from GlobalChat when connected.',
+          )
+        : ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
       separatorBuilder: (_, _) => const Divider(),
@@ -17,26 +25,15 @@ class ListScreen extends StatelessWidget {
         title: Text(items[i]),
         subtitle: const Text('Available in your workspace'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => title == 'New chat' ? c.go('/chat/${items[i]}') : null,
+        onTap: items.isEmpty
+            ? null
+            : () {
+                if (title == 'New chat') {
+                  c.go('/chat/${items[i]}');
+                }
+              },
       ),
     ),
-  );
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-  @override
-  Widget build(BuildContext c) => ListScreen(
-    title: 'Settings',
-    items: const [
-      'Profile',
-      'Privacy',
-      'Notifications',
-      'Linked devices',
-      'Appearance',
-      'Storage & data',
-      'About',
-    ],
   );
 }
 

@@ -5,12 +5,14 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -51,9 +53,19 @@ class Conversation(Base):
     __table_args__ = (
         UniqueConstraint("organization_id", "direct_key", name="conversation_direct_key"),
         Index("conversation_org_status", "organization_id", "status"),
+        Index(
+            "personal_direct_unique",
+            "direct_key",
+            unique=True,
+            postgresql_where=text("organization_id IS NULL"),
+        ),
+        CheckConstraint(
+            "organization_id IS NOT NULL OR (type = 'GROUP') OR (type = 'DIRECT' AND direct_key IS NOT NULL)",
+            name="personal_scope",
+        ),
     )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     type: Mapped[CType] = mapped_column(String(20))
     direct_key: Mapped[str | None] = mapped_column(String(80))
     title: Mapped[str | None] = mapped_column(String(200))
@@ -79,7 +91,7 @@ class ConversationMember(Base):
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("conversations.id", ondelete="RESTRICT")
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     role: Mapped[MRole] = mapped_column(String(20), default=MRole.MEMBER)
@@ -168,7 +180,7 @@ class OutboxEvent(Base):
     event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
     event_type: Mapped[str] = mapped_column(String(100))
     aggregate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     correlation_id: Mapped[str] = mapped_column(String(128))
     payload: Mapped[dict] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(20), default="PENDING")
@@ -184,7 +196,7 @@ class ConversationMessageProjection(Base):
         Index("conversation_message_summary", "organization_id", "conversation_id", "sequence"),
     )
     message_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sender_member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sequence: Mapped[int] = mapped_column(BigInteger)
@@ -196,7 +208,7 @@ class ConversationMessageProjection(Base):
 
 class ConversationReadProjection(Base):
     __tablename__ = "conversation_read_projections"
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     sequence: Mapped[int] = mapped_column(BigInteger, default=0)

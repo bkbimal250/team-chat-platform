@@ -9,9 +9,17 @@ from rest_framework.routers import DefaultRouter
 from apps.audit.api import AuditViewSet
 from apps.branches.api import BranchViewSet
 from apps.invitations.api import InvitationViewSet
+from apps.invitations.onboarding import invitation_onboarding
 from apps.members.api import MemberViewSet
 from apps.organizations.api import OrganizationViewSet
 from apps.organizations.internal_api import company_registration, identity_memberships
+from apps.organizations.platform_api import (
+    invitations as platform_invitations,
+    memberships as platform_memberships,
+    organizations as platform_organizations,
+    owners as platform_owners,
+    security_summary as platform_security_summary,
+)
 from apps.roles.api import PermissionViewSet, RoleAssignmentViewSet, RoleViewSet
 from apps.teams.api import TeamViewSet
 
@@ -50,6 +58,14 @@ def ready(request):
 
 
 urlpatterns = [
+    path("api/v1/platform/organizations/", platform_organizations),
+    path("api/v1/platform/organizations/<uuid:organization_id>/", platform_organizations),
+    path("api/v1/platform/organizations/<uuid:organization_id>/owners/", platform_owners),
+    path("api/v1/platform/organizations/<uuid:organization_id>/memberships/", platform_memberships),
+    path("api/v1/platform/organizations/<uuid:organization_id>/invitations/", platform_invitations),
+    path("api/v1/platform/organizations/<uuid:organization_id>/security/", platform_security_summary),
+    path("api/v1/platform/identities/<uuid:identity_id>/memberships/", platform_memberships),
+    path("api/internal/v1/invitations/<str:action>/", invitation_onboarding),
     path("api/internal/v1/company-registration/", company_registration),
     path("admin/", admin.site.urls),
     path("api/v1/", include(router.urls)),

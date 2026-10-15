@@ -1,3 +1,4 @@
+import { AdminLiveProvider } from "@/features/admin/live-provider";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminGuard } from "@/features/auth/admin-guard";
 export default function AdminLayout({
@@ -7,7 +8,7 @@ export default function AdminLayout({
 }) {
   return (
     <AdminGuard>
-      <AdminShell>{children}</AdminShell>
+      <AdminLiveProvider><AdminShell>{children}</AdminShell></AdminLiveProvider>
     </AdminGuard>
   );
 }

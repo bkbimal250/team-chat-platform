@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class ObjectInfo:
     size_bytes: int
     mime_type: str
+    checksum_sha256: str | None = None
 
 
 class StorageError(Exception):
@@ -51,8 +52,8 @@ class PrivateStorage(Protocol):
 class S3PrivateStorage:
     """Private S3 adapter using the standard AWS credential provider chain.
 
-    No static access keys are accepted here. boto3 therefore uses ECS task-role
-    credentials in Fargate, or the normal SDK credential chain outside ECS.
+    Credentials are never hardcoded. boto3 uses the standard SDK chain (e.g.
+    AWS_ACCESS_KEY_ID on a VPS, or IAM role where applicable).
     """
 
     def __init__(self, *, region: str, bucket: str, endpoint_url: str | None = None, client=None):
@@ -99,7 +100,13 @@ class S3PrivateStorage:
             if error_code in {"404", "NoSuchKey", "NotFound"}:
                 return None
             raise
-        return ObjectInfo(int(response["ContentLength"]), response.get("ContentType", ""))
+        metadata = response.get("Metadata") or {}
+        checksum = response.get("ChecksumSHA256") or metadata.get("sha256") or metadata.get("checksum_sha256")
+        return ObjectInfo(
+            int(response["ContentLength"]),
+            response.get("ContentType", ""),
+            checksum.lower() if isinstance(checksum, str) else None,
+        )
 
     async def presign_download(self, bucket: str, key: str, expires: int) -> str:
         return await self._call(

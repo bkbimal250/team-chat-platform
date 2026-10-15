@@ -8,6 +8,18 @@ from app.main import create_app
 from app.routing import collisions_for, owner_for
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/auth/login",
+        "/api/v1/auth/registration/company",
+        "/api/v1/auth/invitations/password",
+    ],
+)
+def test_email_password_contract_routes_to_identity(path):
+    assert owner_for(path) == "identity"
+
+
 @pytest.fixture
 def requests_seen():
     return []
@@ -58,8 +70,45 @@ def test_route_ownership_is_deterministic():
         "/api/v1/messages/m-1/reactions": "messaging",
         "/api/v1/media/m-1/download": "media",
         "/api/v1/notifications/preferences": "notification",
+        "/api/v1/platform/me": "identity",
+        "/api/v1/platform/organizations/": "organization",
+        "/api/v1/platform/organizations/00000000-0000-0000-0000-000000000001/owners/": (
+            "organization"
+        ),
+        "/api/v1/platform/organizations/00000000-0000-0000-0000-000000000001/security/": (
+            "organization"
+        ),
+        "/api/v1/platform/identities/00000000-0000-0000-0000-000000000001/memberships/": (
+            "organization"
+        ),
     }
     assert {path: owner_for(path) for path in expected} == expected
+
+
+async def test_platform_services_requires_bearer_before_any_health_probe(
+    settings, transport, requests_seen
+):
+    response = await request(create_app(settings, transport), "GET", "/api/v1/platform/services")
+    assert response.status_code == 401
+    assert requests_seen == []
+
+
+async def test_platform_service_aggregate_requires_identity_permission(settings, requests_seen):
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        if request.url.path == "/api/v1/platform/me":
+            return httpx.Response(403, json={"detail": "forbidden"})
+        return httpx.Response(200, json={"status": "ready"})
+
+    response = await request(
+        create_app(settings, httpx.MockTransport(handler)),
+        "GET",
+        "/api/v1/platform/services",
+        headers={"Authorization": "Bearer tenant-owner-token"},
+    )
+    assert response.status_code == 403
+    assert len(requests_seen) == 1
+    assert requests_seen[0].url.path == "/api/v1/platform/me"
 
 
 def test_route_collision_precedence_is_explicit():
@@ -183,7 +232,7 @@ async def test_health_does_not_probe_downstreams(settings, transport, requests_s
     live = await request(app, "GET", "/health/live")
     ready = await request(app, "GET", "/health/ready")
     assert live.json() == {"status": "alive"}
-    assert ready.json() == {"status": "ready"}
+    assert ready.json() == {"status": "ready", "rate_limit_enabled": False}
     assert requests_seen == []
 
 
@@ -248,3 +297,40 @@ async def test_company_registration_routes_forward_public_body(
     assert json.loads(requests_seen[0].content) == payload
     assert "authorization" not in requests_seen[0].headers
     assert requests_seen[0].headers["x-correlation-id"] == "registration-test"
+
+
+@pytest.mark.parametrize(
+    "path,owner",
+    [
+        ("/api/v1/invitations/", "organization"),
+        ("/api/v1/invitations/invite-id/resend/", "organization"),
+        ("/api/v1/invitations/invite-id/revoke/", "organization"),
+        ("/api/v1/auth/invitations/validate", "identity"),
+        ("/api/v1/auth/invitations/request", "identity"),
+        ("/api/v1/auth/invitations/resend", "identity"),
+        ("/api/v1/auth/invitations/verify", "identity"),
+        ("/api/internal/v1/invitations/accept/", None),
+        ("/internal/v1/users/provision", None),
+    ],
+)
+def test_invitation_routes_keep_internal_acceptance_private(path, owner):
+    assert owner_for(path) == owner
+
+
+@pytest.mark.parametrize(
+    "path", ["/api/v1/contacts", "/api/v1/contacts/match", "/api/v1/contacts/123"]
+)
+def test_contacts_are_explicitly_user_owned(path):
+    assert owner_for(path) == "user"
+    assert owner_for("/internal/v1/contact-discovery") is None
+
+
+@pytest.mark.parametrize("method", ["GET", "POST", "PATCH"])
+async def test_preserves_django_trailing_slash_without_redirect_loop(
+    settings, transport, requests_seen, method
+):
+    response = await request(
+        create_app(settings, transport), method, "/api/v1/organizations/current/"
+    )
+    assert response.status_code == 201
+    assert requests_seen[0].url.path == "/api/v1/organizations/current/"

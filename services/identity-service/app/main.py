@@ -11,7 +11,17 @@ from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 from sqlalchemy import text
 
-from app.api.v1 import auth, devices, registration, sessions
+from app.api.v1 import (
+    auth,
+    contact_discovery,
+    devices,
+    e2ee,
+    invitations,
+    password,
+    platform,
+    registration,
+    sessions,
+)
 from app.core.config import get_settings
 from app.core.errors import DomainError, domain_error_handler
 from app.core.logging import configure_logging
@@ -47,7 +57,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
 )
 
@@ -124,6 +134,14 @@ async def ready(request: Request):
 
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(platform.router, prefix="/api/v1")
+app.include_router(password.router, prefix="/api/v1")
 app.include_router(registration.router, prefix="/api/v1")
+app.include_router(invitations.router, prefix="/api/v1")
 app.include_router(devices.router, prefix="/api/v1")
 app.include_router(sessions.router, prefix="/api/v1")
+app.include_router(e2ee.devices_e2ee, prefix="/api/v1")
+app.include_router(e2ee.users_e2ee, prefix="/api/v1")
+app.include_router(e2ee.e2ee_router, prefix="/api/v1")
+
+app.include_router(contact_discovery.router)

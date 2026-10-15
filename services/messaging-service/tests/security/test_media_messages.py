@@ -110,6 +110,7 @@ async def test_media_send_emits_reference_only_after_authorization():
             super().__init__(row)
             self.results = iter(
                 [
+                    SimpleNamespace(status="ACTIVE"),
                     SimpleNamespace(status="ACTIVE", type="GROUP"),
                     SimpleNamespace(status="ACTIVE"),
                     None,

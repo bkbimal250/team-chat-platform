@@ -10,9 +10,10 @@ from app.typing import TypingBroadcaster
 
 
 @pytest.mark.asyncio
-async def test_typing_is_tenant_scoped_authorized_and_excludes_sender():
+@pytest.mark.parametrize("personal", [False, True])
+async def test_typing_is_tenant_scoped_authorized_and_excludes_sender(personal):
     registry = Registry()
-    org, cid = uuid4(), uuid4()
+    org, cid = (None if personal else uuid4()), uuid4()
     sender = await registry.register(Principal(uuid4(), uuid4(), uuid4(), org, uuid4()))
     peer = await registry.register(Principal(uuid4(), uuid4(), uuid4(), org, uuid4()))
     foreign = await registry.register(Principal(uuid4(), uuid4(), uuid4(), uuid4(), uuid4()))

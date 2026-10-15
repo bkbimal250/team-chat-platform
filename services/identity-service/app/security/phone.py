@@ -3,14 +3,14 @@ import phonenumbers
 from app.core.errors import DomainError
 
 
-def normalize_phone(value: str) -> str:
+def normalize_phone(value: str, country: str | None = None) -> str:
     try:
-        parsed = phonenumbers.parse(value, None)
+        parsed = phonenumbers.parse(value, country)
     except phonenumbers.NumberParseException as exc:
         raise DomainError(
             "PHONE_INVALID", "Provide a valid international phone number.", 422
         ) from exc
-    if not phonenumbers.is_valid_number(parsed):
+    if parsed.extension or not phonenumbers.is_valid_number(parsed):
         raise DomainError("PHONE_INVALID", "Provide a valid international phone number.", 422)
     return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 

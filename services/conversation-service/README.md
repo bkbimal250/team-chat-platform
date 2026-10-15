@@ -1,21 +1,35 @@
 # Conversation Service
 
-Phase 4 owns only conversation structure: direct/group conversations, membership, roles, per-member list state, group settings, and domain outbox rows. It intentionally has no messages, delivery, WebSockets, media, or notifications.
+Owns conversation structure for GlobalChat: personal and workspace (company) scopes, direct and group types, membership roles, per-member list state, group settings, chat summary projections, and transactional outbox events. It does not store message bodies (Messaging Service) or deliver notifications.
 
-`member_id` is the authoritative tenant membership reference. `user_id` is deliberately nullable projection data and is never invented.
+## Scopes
 
-## Important integration boundary
+| Scope | `organization_id` | JWT context | Types |
+| --- | --- | --- | --- |
+| Personal | `null` | Bearer with `sub` only | `POST /personal/direct`, `POST /personal/groups` |
+| Workspace | company UUID | Bearer with `org` + `mid` | `POST /direct`, `POST /groups` |
 
-The required Phase 3 `user-service` is absent in this workspace. This service therefore includes no fallback block-check or profile lookup: production integration must fail closed through an explicit `UserServiceClient` before direct conversation creation is enabled at the gateway. Likewise, the current request-context adapter expects a gateway-verified internal service token plus immutable `X-Organization-ID`/`X-Member-ID` headers. It is a deployment boundary, not public authentication; production must terminate user JWT validation at a trusted gateway or replace this adapter with direct verified identity JWT validation.
+`member_id` in workspace APIs is the organization member UUID. Personal APIs use identity UUIDs as `member_id` and resolve contacts through User Service (`/internal/v1/contacts/authorize`).
 
-Run after supplying the variables from `.env.example`:
+Team and branch entities are not conversations; workspace chats are company-scoped groups or direct messages between members.
+
+## Membership and org lifecycle
+
+Workspace access requires an active `ConversationMember` row and an active `member_projections` row for the organization (defense in depth on list, get, and internal authorize). Organization `member.left.v2` / `member.removed.v2` events bulk-revoke all workspace conversation memberships for that member. `member.reactivated.v2` updates the projection only; conversation memberships are not restored automatically. Personal direct chats and personal groups are never changed by organization events.
+
+## Local development
 
 ```powershell
 python -m uv sync --python 3.12
-python -m uv run alembic upgrade head
+python -m alembic upgrade head
 python -m uv run uvicorn app.main:app --port 8003
+python -m uv run pytest -q
 ```
 
-Swagger is at `http://localhost:8003/api/docs/`; health is `/health/live` and `/health/ready`.
+Swagger: `http://localhost:8003/api/docs/` (non-production). Health: `/health/live`, `/health/ready` (PostgreSQL + Redis).
 
-Direct conversations use a sorted UUID `direct_key` with a unique `(organization_id, direct_key)` constraint. Groups have one OWNER at creation; ownership transfer changes old OWNER to ADMIN and new member to OWNER in one transaction. Owners must transfer before leaving. Personal archive, pin and mute state lives in `conversation_member_states`.
+## Production processes
+
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for API, outbox publisher, and consumer commands.
+
+Direct chats use a sorted `direct_key` with uniqueness per scope. Groups support OWNER / ADMIN / MEMBER, ownership transfer, close (`conversation.closed.v1`), and owner delete (`conversation.deleted.v1`). `ConversationSettings` gate member invites and metadata edits.

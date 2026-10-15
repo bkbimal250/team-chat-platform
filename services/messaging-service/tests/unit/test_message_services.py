@@ -14,8 +14,10 @@ class Db:
         self.values = iter(values)
         self.added = []
         self.flushed = 0
+        self.scalar_calls = 0
 
     async def scalar(self, _):
+        self.scalar_calls += 1
         return next(self.values, None)
 
     def add(self, value):
@@ -38,6 +40,51 @@ async def test_first_delivery_receipt_initializes_counters_before_flush(monkeypa
     assert state.last_delivered_sequence == 3
     assert state.last_read_sequence == 0
     assert db.added[-1].event_type == "message.delivered.v1"
+
+
+@pytest.mark.asyncio
+async def test_existing_null_receipt_counters_are_initialized(monkeypatch):
+    monkeypatch.setattr(services, "authorize", allow)
+    p = Principal(uuid4(), uuid4(), uuid4(), None)
+    state = SimpleNamespace(last_delivered_sequence=None, last_read_sequence=None)
+    db = Db([state, state])
+    await services.mark(db, p, uuid4(), 3, False, "local-regression")
+    assert state.last_delivered_sequence == 3
+    await services.mark(db, p, uuid4(), 3, True, "local-regression")
+    assert state.last_read_sequence == 3
+
+
+@pytest.mark.asyncio
+async def test_personal_authorization_uses_authoritative_membership(monkeypatch):
+    p = Principal(uuid4(), uuid4(), uuid4(), None)
+    conversation_id = uuid4()
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "allowed": True,
+                "organization_id": None,
+                "conversation_id": str(conversation_id),
+                "member_id": str(p.user_id),
+            }
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            return False
+
+        async def post(self, *_args, **_kwargs):
+            return Response()
+
+    monkeypatch.setattr(services.httpx, "AsyncClient", lambda **_: Client())
+    db = Db([])
+    await services.authorize(db, p, conversation_id)
+    assert db.scalar_calls == 0
 
 
 @pytest.mark.asyncio

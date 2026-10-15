@@ -42,3 +42,31 @@ button:disabled {
 [data-theme="dark"] .border-slate-200, [data-theme="dark"] .border-slate-300 { border-color: #334155; }
 [data-theme="dark"] .text-slate-900 { color: #e2e8f0; }
 [data-theme="dark"] .text-slate-500 { color: #94a3b8; }
+
+/* Aurora Workspace: identical semantic tokens in both applications. */
+:root {
+  --background: #F7F8FC; --foreground: #172033;
+  --aurora-surface: #FFFFFF; --aurora-surface-alt: #F1F3F9;
+  --aurora-primary: #635BFF; --aurora-primary-dark: #4F46E5;
+  --aurora-secondary: #8B5CF6; --aurora-muted: #667085;
+  --aurora-border: #E7EAF2; --aurora-sidebar: #171A3A;
+  --aurora-sidebar-alt: #24205A; --aurora-info: #3B82F6;
+  --aurora-success: #10B981; --aurora-warning: #F59E0B;
+  --aurora-danger: #F43F5E; --aurora-cyan: #06B6D4;
+}
+[data-theme="dark"] {
+  color-scheme: dark; --background: #0E1020; --foreground: #F7F8FC;
+  --aurora-surface: #17192B; --aurora-surface-alt: #1E2135;
+  --aurora-sidebar: #111326; --aurora-border: #2B3047;
+  --aurora-primary: #8178FF; --aurora-muted: #A8B0C5;
+}
+@theme inline {
+  --color-aurora-background: var(--background);
+  --color-aurora-text: var(--foreground);
+  --color-aurora-surface: var(--aurora-surface);
+  --color-aurora-surface-alt: var(--aurora-surface-alt);
+  --color-aurora-primary: var(--aurora-primary);
+  --color-aurora-muted: var(--aurora-muted);
+  --color-aurora-border: var(--aurora-border);
+  --color-aurora-sidebar: var(--aurora-sidebar);
+}

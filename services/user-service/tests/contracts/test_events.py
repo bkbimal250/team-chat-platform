@@ -35,7 +35,7 @@ def test_platform_event_envelope_has_required_fields():
         ("identity.created.v1", {"identity_id": "id"}),
         ("member.activated.v1", {"member_id": "id", "identity_id": "id"}),
         ("member.suspended.v1", {"member_id": "id", "identity_id": "id"}),
-        ("member.removed.v1", {"member_id": "id", "identity_id": "id"}),
+        ("member.removed.v2", {"member_id": "id", "user_id": "id", "status": "REMOVED"}),
         ("organization.suspended.v1", {}),
         ("user.created.v1", {"user_id": "id"}),
         ("user.profile_updated.v1", {"user_id": "id"}),
@@ -46,5 +46,5 @@ def test_platform_event_envelope_has_required_fields():
     ],
 )
 def test_required_event_contracts(event_type, payload):
-    assert event_type.endswith(".v1")
+    assert event_type.rsplit(".", 1)[1] == ("v2" if event_type == "member.removed.v2" else "v1")
     assert isinstance(payload, dict)

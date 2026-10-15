@@ -57,15 +57,44 @@ async def test_jwt_principal_validates_signature_claims_and_expiry(jwt_keys):
         await get_principal(f"Bearer {token}altered")
 
 
-def test_production_configuration_fails_closed():
+def test_production_configuration_fails_closed(monkeypatch):
+    for name in (
+        "JWT_PUBLIC_KEY",
+        "RABBITMQ_URL",
+        "INTERNAL_SERVICE_TOKEN",
+        "FIREBASE_CREDENTIALS_JSON",
+        "DATABASE_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    base = {"_env_file": None}
     with pytest.raises(ValidationError, match="JWT_PUBLIC_KEY"):
         NotificationSettings(
-            app_env="production", push_provider="fcm", firebase_credentials_json="{}"
+            **base,
+            app_env="production",
+            push_provider="fcm",
+            firebase_credentials_json="{}",
         )
-    with pytest.raises(ValidationError, match="PUSH_PROVIDER=fcm"):
-        NotificationSettings(app_env="production", jwt_public_key="key")
+    with pytest.raises(ValidationError, match="RABBITMQ_URL"):
+        NotificationSettings(
+            **base,
+            app_env="production",
+            jwt_public_key="key",
+            push_provider="fcm",
+            firebase_credentials_json="{}",
+            database_url="postgresql+asyncpg://notify:pw@db.internal/notify",
+        )
+    with pytest.raises(ValidationError, match="INTERNAL_SERVICE_TOKEN"):
+        NotificationSettings(
+            **base,
+            app_env="production",
+            jwt_public_key="key",
+            rabbitmq_url="amqp://notify:pw@rabbit.internal:5672/",
+            push_provider="fcm",
+            firebase_credentials_json="{}",
+            database_url="postgresql+asyncpg://notify:pw@db.internal/notify",
+        )
     with pytest.raises(ValidationError, match="FIREBASE_CREDENTIALS_JSON"):
-        NotificationSettings(push_provider="fcm")
+        NotificationSettings(**base, push_provider="fcm")
 
 
 @pytest.mark.asyncio

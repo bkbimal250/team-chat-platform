@@ -1,6 +1,7 @@
 name: globalchat-local
 services:
   postgres:
+    restart: unless-stopped
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
@@ -13,6 +14,7 @@ services:
       timeout: 3s
       retries: 30
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     ports: ["127.0.0.1:6380:6379"]
     command: ["redis-server", "--appendonly", "yes"]
@@ -23,6 +25,7 @@ services:
       timeout: 3s
       retries: 30
   rabbitmq:
+    restart: unless-stopped
     image: rabbitmq:4-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: globalchat_local

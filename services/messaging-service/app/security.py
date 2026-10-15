@@ -12,7 +12,7 @@ class Principal:
     user_id: UUID
     member_id: UUID
     device_id: UUID
-    organization_id: UUID
+    organization_id: UUID | None
 
 
 async def principal(authorization: str = Header(...)) -> Principal:
@@ -25,10 +25,15 @@ async def principal(authorization: str = Header(...)) -> Principal:
             algorithms=[s.jwt_algorithm],
             issuer=s.jwt_issuer,
             audience=s.jwt_audience,
-            options={"require": ["sub", "mid", "did", "org", "exp"]},
+            options={"require": ["sub", "did", "exp"]},
         )
+        if ("org" in claims) != ("mid" in claims):
+            raise ValueError("Incomplete tenant context")
         return Principal(
-            UUID(claims["sub"]), UUID(claims["mid"]), UUID(claims["did"]), UUID(claims["org"])
+            UUID(claims["sub"]),
+            UUID(claims["mid"]) if "mid" in claims else UUID(claims["sub"]),
+            UUID(claims["did"]),
+            UUID(claims["org"]) if "org" in claims else None,
         )
     except Exception as exc:
         raise DomainError("ACCESS_TOKEN_INVALID", "Authentication is required.", 401) from exc

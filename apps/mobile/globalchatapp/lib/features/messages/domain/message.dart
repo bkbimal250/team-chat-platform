@@ -48,8 +48,18 @@ class ChatMessage {
     this.attachment,
     this.reactions = const [],
     this.editedAt,
+    this.sequence = 0,
+    this.decryptFailed = false,
+    this.trustWarning,
+    this.replyToMessageId,
+    this.mediaPayload,
+    this.senderUserId,
+    this.senderDeviceId,
   });
+
   final String id, conversationId, senderMemberId;
+  final String? senderUserId;
+  final String? senderDeviceId;
   final MessageType type;
   final DateTime createdAt;
   final bool isMine;
@@ -59,4 +69,41 @@ class ChatMessage {
   final MediaAttachment? attachment;
   final List<MessageReaction> reactions;
   final DateTime? editedAt;
+  final int sequence;
+  final bool decryptFailed;
+  final String? trustWarning;
+  final String? replyToMessageId;
+  final Map<String, dynamic>? mediaPayload;
+
+  ChatMessage copyWith({
+    String? id,
+    String? text,
+    MessageStatus? status,
+    List<MessageReaction>? reactions,
+    DateTime? editedAt,
+    MessageType? type,
+    bool? decryptFailed,
+    String? trustWarning,
+  }) =>
+      ChatMessage(
+        id: id ?? this.id,
+        conversationId: conversationId,
+        senderMemberId: senderMemberId,
+        type: type ?? this.type,
+        createdAt: createdAt,
+        isMine: isMine,
+        text: text ?? this.text,
+        status: status ?? this.status,
+        replyTo: replyTo,
+        attachment: attachment,
+        reactions: reactions ?? this.reactions,
+        editedAt: editedAt ?? this.editedAt,
+        sequence: sequence,
+        decryptFailed: decryptFailed ?? this.decryptFailed,
+        trustWarning: trustWarning ?? this.trustWarning,
+        replyToMessageId: replyToMessageId,
+        mediaPayload: mediaPayload,
+        senderUserId: senderUserId,
+        senderDeviceId: senderDeviceId,
+      );
 }

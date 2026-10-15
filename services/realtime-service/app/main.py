@@ -11,44 +11,74 @@ from redis.asyncio import Redis
 from app.auth import authenticate
 from app.authorization import ConversationAuthorizer
 from app.core import ProtocolError, settings
+from app.e2ee_distribution import E2eeDistributionBroadcaster
+from app.org_membership import OrgMembershipStore, RedisOrgMembershipStore
+from app.presence import PresenceService
 from app.registry import RedisMetadataRegistry, Registry
 from app.runtime import Runtime
 from app.typing import TypingBroadcaster
 
 app = FastAPI(title="realtime-service")
-# This is always local socket ownership. Production startup attaches shared Redis metadata.
-registry = Registry(settings().max_queue_size, instance_id=settings().instance_id)
+# Avoid loading Settings (and .env production validation) at import time; startup rebinds when configured.
+registry = Registry(100, instance_id="local")
+membership_store = OrgMembershipStore()
+presence_service = PresenceService()
 authorizer = ConversationAuthorizer()
 accepting_connections = True
 runtime = Runtime()
 delivery_task: asyncio.Task | None = None
 redis_pubsub = None
+redis_client: Redis | None = None
 typing_broadcaster = TypingBroadcaster(registry, lambda p, cid: authorizer.authorize(p, cid))
+e2ee_broadcaster = E2eeDistributionBroadcaster(
+    registry, lambda p, cid: authorizer.authorize(p, cid)
+)
 
 
 def build_production_registry(redis_client: Redis, instance_id: str | None = None) -> Registry:
-    """Build one process-local socket registry backed by common Redis metadata."""
     configured = settings()
     owner = instance_id or configured.instance_id
+    store = RedisOrgMembershipStore(redis_client)
+    global membership_store, presence_service
+    membership_store = store
+    presence_service = PresenceService(redis_client, store)
+    metadata = RedisMetadataRegistry(redis_client, owner, store)
     return Registry(
         configured.max_queue_size,
-        metadata_registry=RedisMetadataRegistry(redis_client, owner),
+        metadata_registry=metadata,
         instance_id=owner,
+        membership_store=store,
     )
 
 
-async def _deliver_remote(payload: dict):
-    """Deliver an already-routed event only to this process's local socket."""
-    if payload.get("target_instance_id") != settings().instance_id:
-        return
-    metadata = registry.metadata_registry
-    connection = registry.connections.get(payload.get("connection_id", ""))
+async def _apply_workspace_revocation(payload: dict):
     try:
         organization_id = UUID(payload["organization_id"])
+        member_id = UUID(payload["member_id"])
+        status = payload.get("status", "REMOVED")
+    except (KeyError, ValueError, TypeError):
+        return
+    await registry.revoke_workspace_member(organization_id, member_id, status)
+
+
+async def _deliver_remote(payload: dict):
+    if payload.get("target_instance_id") != settings().instance_id:
+        return
+    if payload.get("type") == "workspace.revoked.v1":
+        await _apply_workspace_revocation(payload.get("payload", payload))
+        return
+    connection = registry.connections.get(payload.get("connection_id", ""))
+    try:
+        organization_id = (
+            UUID(payload["organization_id"]) if payload.get("organization_id") else None
+        )
     except (KeyError, ValueError):
         return
     if not connection or connection.principal.organization_id != organization_id:
         return
+    if not await registry.workspace_delivery_allowed(connection.principal):
+        return
+    metadata = registry.metadata_registry
     if metadata and not await metadata.claim_delivery(payload.get("delivery_id", "")):
         return
     frame = payload["event"]
@@ -69,34 +99,62 @@ async def _listen_for_deliveries(pubsub):
             continue
         try:
             raw = message["data"]
-            await _deliver_remote(json.loads(raw.decode() if isinstance(raw, bytes) else raw))
+            data = json.loads(raw.decode() if isinstance(raw, bytes) else raw)
+            channel = message.get("channel")
+            if isinstance(channel, bytes):
+                channel = channel.decode()
+            if channel == "realtime:workspace-revocations":
+                await _apply_workspace_revocation(data)
+            else:
+                await _deliver_remote(data)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             continue
 
 
 @app.on_event("startup")
 async def startup():
-    """Production requires Redis; development/test may use the local-only registry explicitly."""
-    global registry, runtime, delivery_task, redis_pubsub, accepting_connections, typing_broadcaster
+    global \
+        registry, \
+        runtime, \
+        delivery_task, \
+        redis_pubsub, \
+        accepting_connections, \
+        typing_broadcaster, \
+        redis_client, \
+        membership_store, \
+        presence_service
     configured = settings()
     accepting_connections = True
     if not configured.redis_url:
         if configured.app_env == "production":
             raise RuntimeError("REDIS_URL is required in production")
+        registry.membership_store = membership_store
+        presence_service = PresenceService(membership_store=membership_store)
         return
-    client = Redis.from_url(configured.redis_url)
+    redis_client = Redis.from_url(configured.redis_url)
     try:
-        await client.ping()
+        await redis_client.ping()
     except Exception:
-        await client.aclose()
+        await redis_client.aclose()
+        redis_client = None
         if configured.app_env == "production":
             raise
+        registry.membership_store = membership_store
         return
-    registry = build_production_registry(client)
+    registry = build_production_registry(redis_client)
+    presence_service.redis = redis_client
+
+    async def notify_presence(identity_id: UUID, online: bool):
+        await registry.broadcast_presence(identity_id, online, presence_service.authorize_watch)
+
+    presence_service._notify_watchers_callback = notify_presence
     typing_broadcaster = TypingBroadcaster(registry, lambda p, cid: authorizer.authorize(p, cid))
-    runtime = Runtime(redis_client=client, metadata_registry=registry.metadata_registry)
-    redis_pubsub = client.pubsub()
-    await redis_pubsub.subscribe(f"realtime:instance:{configured.instance_id}:deliveries")
+    runtime = Runtime(redis_client=redis_client, metadata_registry=registry.metadata_registry)
+    redis_pubsub = redis_client.pubsub()
+    await redis_pubsub.subscribe(
+        f"realtime:instance:{configured.instance_id}:deliveries",
+        "realtime:workspace-revocations",
+    )
     delivery_task = asyncio.create_task(_listen_for_deliveries(redis_pubsub))
 
 
@@ -126,6 +184,14 @@ async def sender(websocket: WebSocket, connection):
         await websocket.send_json(await connection.queue.get())
 
 
+async def ensure_workspace_active(principal):
+    if principal.organization_id is None:
+        return
+    store = registry.membership_store or membership_store
+    if not await store.is_active(principal.organization_id, principal.member_id):
+        raise ProtocolError("CONVERSATION_FORBIDDEN", "Conversation access is unavailable.")
+
+
 async def client_event(connection, frame: dict):
     if frame.get("version") != 1:
         raise ProtocolError("PROTOCOL_INVALID", "Unsupported protocol version.")
@@ -133,6 +199,7 @@ async def client_event(connection, frame: dict):
     if event_type == "ping":
         return {"version": 1, "type": "pong"}
     if event_type in {"subscribe", "unsubscribe"}:
+        await ensure_workspace_active(connection.principal)
         conversation_id = UUID(frame["conversation_id"])
         await authorizer.authorize(connection.principal, conversation_id)
         if event_type == "subscribe":
@@ -141,6 +208,7 @@ async def client_event(connection, frame: dict):
             await registry.unsubscribe(connection, conversation_id)
         return {"version": 1, "type": event_type + ".ok", "conversation_id": str(conversation_id)}
     if event_type in {"typing.start", "typing.stop"}:
+        await ensure_workspace_active(connection.principal)
         conversation_id = UUID(frame["conversation_id"])
         await authorizer.authorize(connection.principal, conversation_id)
         if conversation_id not in connection.subscriptions:
@@ -149,8 +217,39 @@ async def client_event(connection, frame: dict):
         await typing_broadcaster.update(connection, conversation_id, event_type == "typing.start")
         return {"version": 1, "type": event_type + ".ok"}
     if event_type == "presence.heartbeat":
+        await presence_service.touch(connection.principal)
         await registry.refresh(connection)
         return {"version": 1, "type": event_type + ".ok"}
+    if event_type == "presence.subscribe":
+        await ensure_workspace_active(connection.principal)
+        values = frame.get("identity_ids", [])
+        if not isinstance(values, list) or len(values) > 50:
+            raise ProtocolError("PROTOCOL_INVALID", "Subscribe to at most 50 identities.")
+        identity_ids = [UUID(value) for value in values]
+        snapshots = []
+        for identity_id in identity_ids:
+            await presence_service.authorize_watch(connection.principal, identity_id)
+            registry.watch_presence(connection, identity_id)
+            snapshots.append(await presence_service.snapshot(identity_id))
+        return {"version": 1, "type": "presence.snapshot.v1", "identities": snapshots}
+    if event_type == "e2ee.sender_key_distribution":
+        await ensure_workspace_active(connection.principal)
+        conversation_id = UUID(frame["conversation_id"])
+        await authorizer.authorize(connection.principal, conversation_id)
+        if conversation_id not in connection.subscriptions:
+            raise ProtocolError("CONVERSATION_FORBIDDEN", "Conversation is not subscribed.")
+        e2ee_broadcaster.registry = registry
+        await e2ee_broadcaster.publish(
+            connection,
+            conversation_id,
+            {
+                "distribution_id": frame["distribution_id"],
+                "target_device_id": frame.get("target_device_id"),
+                "message_type": frame["message_type"],
+                "ciphertext": frame["ciphertext"],
+            },
+        )
+        return {"version": 1, "type": "e2ee.sender_key_distribution.ok"}
     raise ProtocolError("PROTOCOL_INVALID", "Unsupported client event.")
 
 
@@ -167,6 +266,18 @@ async def realtime(websocket: WebSocket):
         return
     await websocket.accept()
     connection = await registry.register(principal)
+    await presence_service.touch(principal)
+    await registry.enqueue(
+        connection,
+        {
+            "version": 1,
+            "type": "connection.ready.v1",
+            "payload": {
+                "resubscribe_required": True,
+                "backfill": "Use Messaging conversation history for missed messages.",
+            },
+        },
+    )
     sender_task = asyncio.create_task(sender(websocket, connection))
     try:
         while True:
@@ -182,12 +293,13 @@ async def realtime(websocket: WebSocket):
     finally:
         sender_task.cancel()
         await typing_broadcaster.remove(connection)
+        await presence_service.clear(principal)
         await registry.remove(connection.id)
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    global accepting_connections, delivery_task, redis_pubsub
+    global accepting_connections, delivery_task, redis_pubsub, redis_client
     accepting_connections = False
     await typing_broadcaster.close()
     for connection in list(registry.connections.values()):
@@ -200,4 +312,7 @@ async def shutdown():
     if redis_pubsub:
         await redis_pubsub.aclose()
         redis_pubsub = None
+    if redis_client:
+        await redis_client.aclose()
+        redis_client = None
     await runtime.close()

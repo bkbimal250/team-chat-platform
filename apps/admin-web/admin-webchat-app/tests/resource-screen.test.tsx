@@ -2,10 +2,13 @@ import { it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResourceScreen } from "@/features/admin/resource-screen";
-import { AuthProvider } from "@/features/auth/auth-provider";
-import { AdminGuard } from "@/features/auth/admin-guard";
 import { saveSession } from "@/lib/auth/session";
 import { tokens, json, page } from "./fixtures";
+// Isolate tenant resource behavior awaiting its move to the Company Workspace.
+// Platform authorization has separate deny-by-default integration tests.
+vi.mock("@/features/auth/auth-provider", () => ({
+  useAuth: () => ({ permissions: new Set(["branch.view", "branch.create", "branch.update"]) }),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 function prepare(
   branchResponse: Response,
@@ -42,11 +45,7 @@ function prepare(
   });
   vi.stubGlobal("fetch", fetch);
   render(
-    <AuthProvider>
-      <AdminGuard>
-        <ResourceScreen resource="branches" />
-      </AdminGuard>
-    </AuthProvider>,
+    <ResourceScreen resource="branches" />,
   );
   return fetch;
 }

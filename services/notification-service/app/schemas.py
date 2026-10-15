@@ -16,3 +16,7 @@ class PreferencePatch(BaseModel):
     notification_preview: str | None = None
     sound_enabled: bool | None = None
     vibration_enabled: bool | None = None
+
+
+class ConversationMuteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")

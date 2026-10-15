@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { apiRequest, gatewayPath } from "@/lib/api/client";
 
-import type { CursorPage, Role } from "@/lib/api/contracts";
+import type { CursorPage } from "@/lib/api/contracts";
 
 import { useResource } from "@/lib/api/use-resource";
 
@@ -28,6 +29,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import { ErrorState } from "@/components/feedback/error-state";
 
+import { IdentityDisplay } from "@/components/ui/identity-display";
+import { Selection } from "./invitations-client";
+import { refreshAdmin } from "@/lib/realtime/refresh";
 import { configs, formPayload, type ResourceConfig } from "./resource-config";
 
 function displayValue(value: string | number | boolean | null | string[]) {
@@ -56,18 +60,20 @@ export function ResourceScreen({
     [cursor, setCursor] = useState<string | null>(null),
     [page, setPage] = useState(1);
 
+  const [filters, setFilters] = useState<Record<string,string>>({});
   const query = new URLSearchParams({ page_size: String(size) });
   if (search) query.set("search", search);
+  Object.entries(filters).forEach(([key,value])=>{ if(value) query.set(key,value); });
   if (status) query.set("status", status);
 
   const path = cursor ?? `/api/v1/${config.resource}/?${query}`;
 
-  const response = useResource<CursorPage<Row>>(path);
-  const roles = useResource<CursorPage<Role>>("/api/v1/roles/");
+  const response = useResource<CursorPage<Row>>(path, auth.permissions.has(config.readPermission));
+
 
   const [selected, setSelected] = useState<Row | null>(null),
     [mode, setMode] = useState<
-      "create" | "edit" | "view" | "lifecycle" | "role" | null
+      "create" | "edit" | "view" | "lifecycle" | "role" | "assignment" | null
     >(null),
     [values, setValues] = useState<Record<string, string>>({}),
     [target, setTarget] = useState(""),
@@ -106,7 +112,9 @@ export function ResourceScreen({
     setBusy(true);
     setError("");
     try {
-      if (mode === "role")
+      if (mode === "assignment")
+        await apiRequest(`/api/v1/${values.assignment_kind}/${values.assignment_id}/members/`, {method:"POST", body:JSON.stringify({member_id:selected?.id})});
+      else if (mode === "role")
         await apiRequest(`/api/v1/members/${selected?.id}/roles/`, {
           method: "POST",
           body: JSON.stringify({ role_id: values.role_id }),
@@ -132,7 +140,8 @@ export function ResourceScreen({
         );
 
       setMode(null);
-      setNotice("Saved by Organization service.");
+      setNotice(mode === "create" ? `${config.title} created.` : mode === "assignment" ? "Member assignment saved." : mode === "lifecycle" ? "Access updated." : "Changes saved.");
+      refreshAdmin([config.resource, "branches", "teams", "audit-logs"]);
       response.reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed.");
@@ -140,6 +149,7 @@ export function ResourceScreen({
       setBusy(false);
     }
   }
+
 
   if (!auth.permissions.has(config.readPermission))
     return (
@@ -169,7 +179,7 @@ export function ResourceScreen({
                 setSearch(draft);
                 reset();
               }}
-              className="flex gap-2"
+              className="flex min-w-0 flex-wrap gap-2"
             >
               <label className="sr-only" htmlFor={`${resource}-search`}>
                 Search {config.title}
@@ -178,7 +188,7 @@ export function ResourceScreen({
                 id={`${resource}-search`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="rounded border p-2"
+                className="min-w-0 rounded border p-2"
               />
               <Button variant="outline" type="submit">
                 Search
@@ -195,7 +205,7 @@ export function ResourceScreen({
                   setStatus(e.target.value);
                   reset();
                 }}
-                className="rounded border p-2"
+                className="min-w-0 rounded border p-2"
               >
                 <option value="">All statuses</option>
                 {config.statuses.map((s) => (
@@ -204,6 +214,7 @@ export function ResourceScreen({
               </select>
             </label>
           )}
+          {resource === "members" && <div className="grid w-full gap-3 sm:grid-cols-3">{(["branch","team","role"] as const).filter(kind=>auth.permissions.has(`${kind}.view`) || (kind === "role" && auth.permissions.has("role.manage"))).map(kind=><Selection key={kind} resource={kind === "branch" ? "branches" : kind === "team" ? "teams" : "roles"} label={`${kind[0].toUpperCase()+kind.slice(1)} filter`} value={filters[kind] ?? ""} onChange={value=>{setFilters({...filters,[kind]:value});reset();}}/>)}</div>}
           <span className="text-sm text-slate-500">
             Newest first (server ordering)
           </span>
@@ -215,7 +226,7 @@ export function ResourceScreen({
                 setSize(Number(e.target.value));
                 reset();
               }}
-              className="rounded border p-2"
+              className="min-w-0 rounded border p-2"
             >
               {[10, 20, 50].map((n) => (
                 <option key={n}>{n}</option>
@@ -250,7 +261,7 @@ export function ResourceScreen({
         ) : response.error ? (
           <ErrorState description={response.error} retry={response.reload} />
         ) : !response.data?.results.length ? (
-          <TableEmpty />
+          <div className="py-6 text-center"><TableEmpty/><p className="text-sm text-slate-500">{search || status ? "Try adjusting your search or filters." : `No ${config.title.toLowerCase()} yet.`}</p>{resource === "members" && auth.permissions.has("invitation.create") && <Link href="/invitations" className="mt-3 inline-block text-sm text-indigo-700 underline">Invite an employee</Link>}</div>
         ) : (
           <DataTable
             rows={response.data.results}
@@ -259,7 +270,7 @@ export function ResourceScreen({
               ...config.columns.map((c) => ({
                 header: c.label,
                 cell: (row: Row) =>
-                  c.key === "status" ? (
+                  c.key === "display_name" ? <IdentityDisplay name={String(row.display_name ?? "")} subtitle={String(row.designation ?? row.department ?? "")}/> : c.key === "status" ? (
                     <StatusBadge status={String(row[c.key])} />
                   ) : (
                     displayValue(row[c.key])
@@ -276,6 +287,7 @@ export function ResourceScreen({
                     >
                       View
                     </Button>
+                    {resource === "members" && (auth.permissions.has("branch.update") || auth.permissions.has("team.update")) && <Button variant="ghost" size="sm" onClick={()=>{open("assignment",row);setValues({assignment_kind:auth.permissions.has("branch.update") ? "branches" : "teams",assignment_id:""});}}>Assign location/team</Button>}
                     {config.edit && can("update") && (
                       <Button
                         variant="ghost"
@@ -397,7 +409,7 @@ export function ResourceScreen({
             {selected &&
               Object.entries(selected).map(([k, v]) => (
                 <div key={k}>
-                  <dt className="text-xs font-medium text-slate-500">{k}</dt>
+                  <dt className="text-xs font-medium text-slate-500">{k.replaceAll("_", " ")}</dt>
                   <dd className="break-words text-sm">
                     {Array.isArray(v) ? v.join(", ") : String(v ?? "—")}
                   </dd>
@@ -406,7 +418,7 @@ export function ResourceScreen({
           </dl>
         ) : (
           <form onSubmit={submit} className="mt-4 space-y-3">
-            {mode === "lifecycle" ? (
+            {mode === "assignment" ? <><label className="block text-sm">Assignment type<select className="mt-1 w-full rounded border p-2" value={values.assignment_kind} onChange={e=>setValues({assignment_kind:e.target.value,assignment_id:""})}>{auth.permissions.has("branch.update") && <option value="branches">Branch</option>}{auth.permissions.has("team.update") && <option value="teams">Team</option>}</select></label><Selection resource={values.assignment_kind === "branches" ? "branches" : "teams"} label="Assignment" required value={values.assignment_id ?? ""} onChange={value=>setValues({...values,assignment_id:value})}/></> : mode === "lifecycle" ? (
               <p>
                 This will{" "}
                 {config.lifecycle === "invitation"
@@ -415,28 +427,14 @@ export function ResourceScreen({
                 . The backend enforces lifecycle and owner protections.
               </p>
             ) : mode === "role" ? (
-              <label className="block">
-                Role
-                <select
-                  required
-                  value={values.role_id ?? ""}
-                  onChange={(e) => setValues({ role_id: e.target.value })}
-                  className="mt-1 w-full rounded border p-2"
-                >
-                  <option value="">Choose a role</option>
-                  {roles.data?.results.map((r) => (
-                    <option value={r.id} key={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Selection resource="roles" label="Role" required value={values.role_id ?? ""} onChange={value=>setValues({role_id:value})}/>
             ) : (
               config.fields.map((f) => (
-                <label className="block text-sm" key={f.name}>
-                  {f.label}
-                  {f.options || f.name === "intended_role_id" ? (
+                <div className="text-sm" key={f.name}>
+                  {!["branch_id", "intended_role_id"].includes(f.name) && <label htmlFor={`${resource}-${f.name}`}>{f.label}</label>}
+                  {f.name === "branch_id" ? <Selection resource="branches" label="Branch location" value={values.branch_id ?? ""} onChange={value=>setValues({...values,branch_id:value})}/> : f.name === "intended_role_id" ? <Selection resource="roles" label="Intended role" required={f.required} value={values[f.name] ?? ""} onChange={value=>setValues({...values,[f.name]:value})}/> : f.options ? (
                     <select
+                      id={`${resource}-${f.name}`}
                       required={f.required}
                       value={values[f.name] ?? ""}
                       onChange={(e) =>
@@ -445,16 +443,11 @@ export function ResourceScreen({
                       className="mt-1 w-full rounded border p-2"
                     >
                       <option value="">Choose</option>
-                      {f.name === "intended_role_id"
-                        ? roles.data?.results.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name}
-                            </option>
-                          ))
-                        : f.options?.map((o) => <option key={o}>{o}</option>)}
+                      {f.options.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   ) : (
                     <input
+                      id={`${resource}-${f.name}`}
                       required={f.required}
                       maxLength={f.maxLength}
                       pattern={f.pattern}
@@ -466,7 +459,7 @@ export function ResourceScreen({
                       className="mt-1 w-full rounded border p-2"
                     />
                   )}
-                </label>
+                </div>
               ))
             )}
             {resource === "members" && mode === "create" && (
@@ -479,7 +472,7 @@ export function ResourceScreen({
                 {error}
               </p>
             )}
-            <div className="flex gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               <Button disabled={busy} type="submit">
                 {busy ? "Saving…" : mode === "lifecycle" ? "Confirm" : "Save"}
               </Button>

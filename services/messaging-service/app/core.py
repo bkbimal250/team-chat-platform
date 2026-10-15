@@ -17,12 +17,16 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "RS256"
     jwt_issuer: str = "identity-service"
     jwt_audience: str = "team-chat-platform"
-    internal_service_token: str = Field(default="local-development-token")
+    conversation_service_url: str = "http://conversation-service:8003"
+    user_service_url: str = "http://user-service:8002"
+    internal_service_token: str = Field(default="local-development-token-32chars-minimum")
 
     @model_validator(mode="after")
     def require_external_production_dependencies(self):
         if self.app_env != "production":
             return self
+        if not self.jwt_public_key or not self.jwt_public_key.strip():
+            raise ValueError("Production requires JWT_PUBLIC_KEY")
         database = urlparse(self.database_url)
         if (
             not self.database_url
@@ -37,7 +41,8 @@ class Settings(BaseSettings):
             raise ValueError("Production rejects RabbitMQ guest credentials")
         if (
             not self.internal_service_token
-            or self.internal_service_token == "local-development-token"
+            or self.internal_service_token == "local-development-token-32chars-minimum"
+            or len(self.internal_service_token) < 32
         ):
             raise ValueError("Production requires an external INTERNAL_SERVICE_TOKEN")
         return self

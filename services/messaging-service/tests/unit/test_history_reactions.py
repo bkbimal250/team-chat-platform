@@ -13,7 +13,10 @@ class HistoryDb:
     async def scalars(self, query):
         self.query = query
         return SimpleNamespace(
-            all=lambda: [SimpleNamespace(sequence=1), SimpleNamespace(sequence=2)]
+            all=lambda: [
+                SimpleNamespace(id=uuid4(), sequence=2),
+                SimpleNamespace(id=uuid4(), sequence=1),
+            ]
         )
 
 
@@ -49,12 +52,18 @@ async def allow(*_):
 @pytest.mark.asyncio
 async def test_history_uses_sequence_cursor_order_and_limit(monkeypatch):
     monkeypatch.setattr(main, "authorize", allow)
+
+    async def empty_reactions(*_):
+        return {}
+
+    monkeypatch.setattr(main, "reactions_for_messages", empty_reactions)
+    monkeypatch.setattr(main, "message_view", lambda message, _: {"sequence": message.sequence})
     db = HistoryDb()
     p = Principal(uuid4(), uuid4(), uuid4(), uuid4())
     rows = await main.history(uuid4(), before_sequence=10, after_sequence=2, limit=500, p=p, db=db)
     sql = str(db.query)
-    assert [row.sequence for row in rows] == [1, 2]
-    assert "ORDER BY messages.sequence" in sql and "LIMIT" in sql
+    assert [row["sequence"] for row in rows] == [1, 2]
+    assert "ORDER BY messages.sequence DESC" in sql and "LIMIT" in sql
 
 
 @pytest.mark.asyncio
@@ -72,6 +81,8 @@ async def test_reaction_add_duplicate_and_remove_are_member_scoped(monkeypatch):
         type="TEXT",
         text="x",
         reply_to_message_id=None,
+        forward_from_message_id=None,
+        forward_from_conversation_id=None,
         client_message_id=uuid4(),
         sequence=1,
         created_at=datetime.now(UTC),

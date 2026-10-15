@@ -32,6 +32,8 @@ async def test_rejoining_member_reuses_authoritative_membership_and_state(monkey
 
     class Db:
         async def execute(self, query):
+            if "conversation_settings" in str(query):
+                return SimpleNamespace(scalar_one_or_none=lambda: None)
             return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: [actor]))
 
         def add(self, row):

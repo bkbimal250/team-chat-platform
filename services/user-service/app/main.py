@@ -1,14 +1,14 @@
 import hmac
-import os
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -21,6 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.auth import AuthContext, require_authenticated_context
+from app.config import get_settings
+from app.contacts_runtime import lifespan
 
 
 class Base(DeclarativeBase):
@@ -37,6 +39,7 @@ class User(Base):
     identity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True, index=True)
     display_name: Mapped[str] = mapped_column(String(200), default="")
     avatar_media_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    avatar_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     about: Mapped[str | None] = mapped_column(String(2000))
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -77,6 +80,7 @@ class UserPrivacySettings(Base):
     online_status_visibility: Mapped[str] = mapped_column(String(20), default="ORGANIZATION")
     last_seen_visibility: Mapped[str] = mapped_column(String(20), default="NOBODY")
     read_receipts_enabled: Mapped[bool] = mapped_column(default=True)
+    discoverable: Mapped[bool] = mapped_column(default=True, server_default="true")
 
 
 class MembershipProjection(Base):
@@ -118,20 +122,9 @@ class ProcessedEvent(Base):
     )
 
 
-database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres@127.0.0.1/teamchat_user_db")
-if os.getenv("APP_ENV", "development") == "production":
-    from sqlalchemy.engine import make_url
-
-    parsed_database = make_url(database_url)
-    if parsed_database.get_backend_name() != "postgresql" or parsed_database.host in {
-        None,
-        "localhost",
-        "127.0.0.1",
-    }:
-        raise RuntimeError("production requires a non-local PostgreSQL DATABASE_URL")
-engine = create_async_engine(database_url)
+engine = create_async_engine(str(get_settings().DATABASE_URL))
 sessions = async_sessionmaker(engine, expire_on_commit=False)
-app = FastAPI(title="User Service", version="1.0.0")
+app = FastAPI(title="User Service", version="1.0.0", lifespan=lifespan)
 
 
 async def db():
@@ -140,9 +133,8 @@ async def db():
 
 
 async def internal(x_internal_service_token: str = Header(...)):
-    if not os.getenv("INTERNAL_SERVICE_TOKEN") or not hmac.compare_digest(
-        x_internal_service_token, os.getenv("INTERNAL_SERVICE_TOKEN", "")
-    ):
+    token = get_settings().INTERNAL_SERVICE_TOKEN
+    if not token or not hmac.compare_digest(x_internal_service_token, token):
         raise HTTPException(401, "service authentication required")
 
 
@@ -176,6 +168,7 @@ class PrivacyPatch(BaseModel):
     online_status_visibility: str | None = None
     last_seen_visibility: str | None = None
     read_receipts_enabled: bool | None = None
+    discoverable: bool | None = None
 
 
 async def current_user(session: AsyncSession, context: AuthContext) -> User:
@@ -185,11 +178,19 @@ async def current_user(session: AsyncSession, context: AuthContext) -> User:
     return user
 
 
+def active_avatar(user: User):
+    expires = getattr(user, "avatar_expires_at", None)
+    return user.avatar_media_id if not expires or expires > datetime.now(UTC) else None
+
+
 def projection(user: User) -> dict:
     return {
         "user_id": str(user.id),
         "display_name": user.display_name,
-        "avatar_media_id": str(user.avatar_media_id) if user.avatar_media_id else None,
+        "avatar_media_id": str(active_avatar(user)) if active_avatar(user) else None,
+        "avatar_expires_at": user.avatar_expires_at.isoformat()
+        if getattr(user, "avatar_expires_at", None)
+        else None,
         "about": user.about,
         "status": user.status,
     }
@@ -246,7 +247,7 @@ async def projections(body: ProjectionRequest, session: AsyncSession = Depends(d
             {
                 "user_id": str(u.id),
                 "display_name": u.display_name,
-                "avatar_media_id": str(u.avatar_media_id) if u.avatar_media_id else None,
+                "avatar_media_id": str(active_avatar(u)) if active_avatar(u) else None,
                 "status": u.status,
             }
             for u in users
@@ -268,6 +269,8 @@ async def update_me(
     context: AuthContext = Depends(require_authenticated_context),
     session: AsyncSession = Depends(db),
 ):
+    if "avatar_media_id" in body.model_fields_set:
+        raise HTTPException(422, "Use the profile photo endpoint to change your picture")
     async with session.begin():
         user = await current_user(session, context)
         for key, value in body.model_dump(exclude_unset=True).items():
@@ -398,6 +401,8 @@ async def update_privacy(
             value = UserPrivacySettings(user_id=user.id)
             session.add(value)
         for key, item in body.model_dump(exclude_unset=True).items():
+            if key in {"discoverable", "read_receipts_enabled"} and item is None:
+                raise HTTPException(422, "privacy flags must be true or false")
             if key.endswith("visibility") and item not in allowed:
                 raise HTTPException(422, "invalid visibility")
             setattr(value, key, item)
@@ -421,31 +426,46 @@ async def blocked_users(
 
 @app.get("/api/v1/users/search")
 async def search_users(
+    request: Request,
     q: str = "",
     limit: int = 20,
     context: AuthContext = Depends(require_authenticated_context),
     session: AsyncSession = Depends(db),
 ):
+    from app.workspace import (
+        membership_user_join,
+        require_active_workspace_member,
+        workspace_directory_visible,
+        workspace_profile,
+        workspace_search_rate_limit,
+    )
+
+    await require_active_workspace_member(session, context)
+    await workspace_search_rate_limit(request, context.identity_id)
     if len(q.strip()) < 2:
         raise HTTPException(422, "query must contain at least two characters")
     limit = min(max(limit, 1), 50)
     query = (
-        select(User, MembershipProjection.member_id)
-        .join(MembershipProjection, MembershipProjection.user_id == User.id)
+        select(User, MembershipProjection.member_id, UserPrivacySettings)
+        .join(MembershipProjection, membership_user_join())
+        .join(UserPrivacySettings, UserPrivacySettings.user_id == User.id)
         .where(
             MembershipProjection.organization_id == context.organization_id,
             MembershipProjection.status == "ACTIVE",
             User.status == "ACTIVE",
+            User.deleted_at.is_(None),
             User.display_name.ilike(f"%{q.strip()}%"),
         )
-        .limit(limit)
+        .limit(limit * 2)
     )
-    return {
-        "users": [
-            projection(user) | {"member_id": str(member_id)}
-            for user, member_id in (await session.execute(query)).all()
-        ]
-    }
+    rows = []
+    for user, member_id, privacy in (await session.execute(query)).all():
+        if not workspace_directory_visible(privacy):
+            continue
+        rows.append(workspace_profile(user, privacy) | {"member_id": str(member_id)})
+        if len(rows) >= limit:
+            break
+    return {"users": rows}
 
 
 @app.get("/api/v1/users/{user_id}")
@@ -454,20 +474,37 @@ async def get_profile(
     context: AuthContext = Depends(require_authenticated_context),
     session: AsyncSession = Depends(db),
 ):
+    from app.workspace import (
+        membership_user_join,
+        require_active_workspace_member,
+        workspace_directory_visible,
+        workspace_profile,
+    )
+
     target = await session.get(User, user_id)
-    if target is None:
+    if target is None or target.deleted_at is not None:
         raise HTTPException(404, "user not found")
-    if target.identity_id != context.identity_id:
-        visible = await session.scalar(
-            select(MembershipProjection.id).where(
-                MembershipProjection.organization_id == context.organization_id,
-                MembershipProjection.user_id == target.id,
-                MembershipProjection.status == "ACTIVE",
-            )
+    if target.identity_id == context.identity_id:
+        return projection(target)
+    if context.organization_id is None:
+        raise HTTPException(404, "user not found")
+    await require_active_workspace_member(session, context)
+    visible = await session.scalar(
+        select(MembershipProjection.id)
+        .select_from(MembershipProjection)
+        .join(User, membership_user_join())
+        .where(
+            MembershipProjection.organization_id == context.organization_id,
+            User.id == target.id,
+            MembershipProjection.status == "ACTIVE",
         )
-        if visible is None:
-            raise HTTPException(404, "user not found")
-    return projection(target)
+    )
+    if visible is None:
+        raise HTTPException(404, "user not found")
+    privacy = await session.get(UserPrivacySettings, target.id)
+    if privacy is None or not workspace_directory_visible(privacy):
+        raise HTTPException(404, "user not found")
+    return workspace_profile(target, privacy)
 
 
 class OwnerProvision(BaseModel):
@@ -476,6 +513,7 @@ class OwnerProvision(BaseModel):
     display_name: str = Field(min_length=1, max_length=200)
 
 
+@app.post("/internal/v1/users/provision", dependencies=[Depends(internal)])
 @app.post("/internal/v1/users/company-owner", dependencies=[Depends(internal)])
 async def provision_owner(body: OwnerProvision, session: AsyncSession = Depends(db)):
     async with session.begin():
@@ -497,5 +535,46 @@ async def provision_owner(body: OwnerProvision, session: AsyncSession = Depends(
                 "user.created.v1",
                 {"display_name": user.display_name, "status": "ACTIVE"},
             )
+        from app.membership_projection import link_user_to_projections
+
+        await link_user_to_projections(session, user.identity_id, user.id)
         # Redelivery never resets a subsequently edited profile.
         return {"user_id": str(user.id)}
+
+
+class Contact(Base):
+    __tablename__ = "contacts"
+    __table_args__ = (
+        UniqueConstraint("owner_user_id", "phone_digest", name="contact_owner_phone_unique"),
+        Index("contact_owner_listing", "owner_user_id", "id"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
+    owner_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    phone_digest: Mapped[str] = mapped_column(String(64))
+    local_label: Mapped[str | None] = mapped_column(String(200))
+    given_name: Mapped[str | None] = mapped_column(String(100))
+    family_name: Mapped[str | None] = mapped_column(String(100))
+    phone_display: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+def register_contacts():
+    from app.contacts import internal_router, router
+
+    app.include_router(router)
+    app.include_router(internal_router)
+
+
+register_contacts()
+
+
+def register_photos():
+    from app.profile_photos import register_profile_photos
+
+    register_profile_photos(app)
+
+
+register_photos()

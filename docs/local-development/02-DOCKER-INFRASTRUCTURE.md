@@ -7,3 +7,5 @@ Compose file: docker-compose.local.yml. Project globalchat-local. PostgreSQL 16:
 docker compose --env-file .local/compose.env -f docker-compose.local.yml ps
 ```
 Expected: healthy postgres/redis/rabbitmq. YOU DO THIS MANUALLY: open http://localhost:15672, use local Rabbit credentials privately from .local/config.json; inspect queues, consumers and unacknowledged messages. Never paste credentials into reports.
+
+All three infrastructure services use `restart: unless-stopped` and named volumes. Keep Docker Desktop running for continuous infrastructure. Explicitly stopped containers remain stopped; use `python scripts/local/dev.py infra` to start them again. This policy does not restart the Windows Python APIs/workers: the local runner owns those processes separately. Do not remove volumes to fix connectivity.

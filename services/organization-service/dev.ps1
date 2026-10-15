@@ -7,6 +7,7 @@ foreach ($line in Get-Content -LiteralPath $taskEnvPath) {
     }
 }
 $env:DATABASE_URL = "postgresql://organization_migrator:$($env:DB_PASSWORD)@127.0.0.1:55432/organization_db"
+$env:TEST_DATABASE_URL = "postgresql://organization_migrator:$($env:DB_PASSWORD)@127.0.0.1:55432/test_organization_db"
 $env:RABBITMQ_URL = "amqp://organization_service:$($env:RABBITMQ_PASSWORD)@127.0.0.1:5672/organization"
 $env:DJANGO_SETTINGS_MODULE = 'config.settings.local'
 Push-Location $PSScriptRoot

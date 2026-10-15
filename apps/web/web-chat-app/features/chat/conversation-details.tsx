@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Info } from "lucide-react";
+import { IconButton, iconSize } from "@/components/ui/icon-button";
 import { Conversation } from "./api";
 export function ConversationDetails({
   conversation,
@@ -9,13 +11,13 @@ export function ConversationDetails({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <IconButton
+        label="Details"
         onClick={() => setOpen(true)}
-        aria-label="Conversation details"
-        className="ml-auto rounded-xl border px-3 py-2 text-xs"
+        className="border border-aurora-border text-xs"
       >
-        Details
-      </button>
+        <Info className={iconSize} />
+      </IconButton>
       {open && (
         <Details conversation={conversation} onClose={() => setOpen(false)} />
       )}
@@ -40,7 +42,7 @@ function Details({
       ref={ref}
       onCancel={onClose}
       aria-label="Conversation details"
-      className="m-auto h-dvh max-h-dvh w-full max-w-sm rounded-2xl bg-white p-7 text-slate-900 backdrop:bg-slate-950/40 md:mr-0"
+      className="m-auto h-dvh max-h-dvh w-full max-w-sm rounded-2xl bg-aurora-surface p-7 text-aurora-text backdrop:bg-slate-950/40 md:mr-0"
     >
       <button
         autoFocus
@@ -52,20 +54,20 @@ function Details({
       <h2 className="text-2xl font-semibold">
         {conversation.title || "Direct conversation"}
       </h2>
-      <p className="mt-3 text-sm text-slate-500">
+      <p className="mt-3 text-sm text-aurora-muted">
         {conversation.description || "No description provided."}
       </p>
       <dl className="mt-8 space-y-4 text-sm">
         <div>
-          <dt className="text-slate-500">Type</dt>
+          <dt className="text-aurora-muted">Type</dt>
           <dd>{conversation.type}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Members</dt>
+          <dt className="text-aurora-muted">Members</dt>
           <dd>{conversation.member_count}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Status</dt>
+          <dt className="text-aurora-muted">Status</dt>
           <dd>{conversation.status}</dd>
         </div>
       </dl>

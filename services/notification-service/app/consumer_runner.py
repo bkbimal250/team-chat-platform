@@ -8,8 +8,13 @@ import pika
 
 from app.db import engine
 from app.message_notification_consumer import MessageNotificationConsumer
+from app.org_notification_consumer import OrgNotificationConsumer
 from app.projection_consumers import ProjectionConsumer
-from app.rabbit import consume_message_created_delivery, consume_projection_delivery
+from app.rabbit import (
+    consume_message_created_delivery,
+    consume_org_notification_delivery,
+    consume_projection_delivery,
+)
 
 EXCHANGE_ORGANIZATION = "organization.events"
 EXCHANGE_MESSAGING = "messaging.events"
@@ -30,11 +35,20 @@ def _consume() -> None:
     channel.exchange_declare(exchange=EXCHANGE_MESSAGING, exchange_type="topic", durable=True)
     channel.exchange_declare(exchange="user.events", exchange_type="topic", durable=True)
     channel.queue_declare(queue="notification.projections", durable=True)
-    for key in ("user.#", "member.#", "conversation.#"):
+    for key in ("user.#", "member.#", "conversation.#", "identity.#"):
         channel.queue_bind("notification.projections", EXCHANGE_ORGANIZATION, key)
     channel.queue_bind("notification.projections", "user.events", "user.#")
     channel.queue_declare(queue="notification.message-created", durable=True)
-    channel.queue_bind("notification.message-created", EXCHANGE_MESSAGING, "message.created.v1")
+    for key in ("message.created.v1", "message.reaction_added.v1"):
+        channel.queue_bind("notification.message-created", EXCHANGE_MESSAGING, key)
+    channel.queue_declare(queue="notification.org-events", durable=True)
+    for key in (
+        "invitation.created.v1",
+        "member.created.v2",
+        "member.updated.v2",
+        "conversation.member_added.v1",
+    ):
+        channel.queue_bind("notification.org-events", EXCHANGE_ORGANIZATION, key)
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(
         "notification.projections",
@@ -44,6 +58,11 @@ def _consume() -> None:
     channel.basic_consume(
         "notification.message-created",
         _callback(consume_message_created_delivery, MessageNotificationConsumer(), loop),
+        auto_ack=False,
+    )
+    channel.basic_consume(
+        "notification.org-events",
+        _callback(consume_org_notification_delivery, OrgNotificationConsumer(), loop),
         auto_ack=False,
     )
     try:

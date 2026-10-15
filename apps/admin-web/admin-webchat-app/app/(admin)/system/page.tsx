@@ -1,9 +1,8 @@
-import { Unavailable } from "@/features/admin/unavailable";
+import { ServicesTable } from "@/features/platform/platform-table";
 export default function Page() {
   return (
-    <Unavailable
-      title="System health"
-      description="An authorized platform-wide infrastructure health API is not exposed. Operational checks remain local CLI tasks."
-    />
+    <main className="mx-auto max-w-7xl p-4 sm:p-6">
+      <ServicesTable />
+    </main>
   );
 }

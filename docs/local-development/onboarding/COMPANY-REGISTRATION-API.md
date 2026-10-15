@@ -1,3 +1,5 @@
+> Preserved phone OTP reference: disabled in the current primary flow. Use [email/password authentication](EMAIL-PASSWORD-AUTH.md) for normal local registration/login. Enable OTP explicitly only for future capability tests.
+
 # Company registration API
 
 Gateway base: `http://localhost:8008`. Admin UI: `http://localhost:3000/register`.

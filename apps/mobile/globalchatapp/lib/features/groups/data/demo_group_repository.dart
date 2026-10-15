@@ -35,6 +35,20 @@ class DemoGroupRepository implements GroupRepository {
   }
 
   @override
+  Future<void> addMembers(String groupId, List<String> memberIds) async {}
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    _groups.remove(groupId);
+  }
+
+  @override
+  Future<void> promoteMember(String groupId, String memberId) async {}
+
+  @override
+  Future<void> demoteMember(String groupId, String memberId) async {}
+
+  @override
   Future<void> leaveGroup(String groupId, String memberId) async {
     final group = _groups[groupId];
     if (group == null) {

@@ -2,128 +2,93 @@
 
 import Link from "next/link";
 
+import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/feedback/error-state";
+import { useAuth } from "@/features/auth/auth-provider";
 import { useResource } from "@/lib/api/use-resource";
 
-import type {
-  Organization,
-  Member,
-  Branch,
-  Team,
-  CursorPage,
-  Audit,
-} from "@/lib/api/contracts";
-
-import { Card } from "@/components/ui/card";
-
-import { Button } from "@/components/ui/button";
-
-import { ErrorState } from "@/components/feedback/error-state";
-
-import { useAuth } from "@/features/auth/auth-provider";
-
-function LoadedMetric({ title, path }: { title: string; path: string }) {
-  const response = useResource<CursorPage<Member | Branch | Team>>(path);
-  return (
-    <Card className="p-5">
-      <h2 className="text-sm text-slate-500">{title}</h2>
-      {response.loading ? (
-        <p role="status">Loading…</p>
-      ) : response.error ? (
-        <ErrorState description={response.error} retry={response.reload} />
-      ) : (
-        <>
-          <p className="mt-2 text-2xl font-semibold">
-            {response.data?.results.length}
-            {response.data?.next ? "+" : ""}
-          </p>
-          <p className="text-xs text-slate-500">
-            {response.data?.next
-              ? "First 50 records; more exist"
-              : "Records visible in your current organization"}
-          </p>
-        </>
-      )}
-    </Card>
-  );
-}
+type PlatformList = { total: number; items: { id: string }[] };
+type ServiceStatus = {
+  items: { name: string; live: boolean; ready: boolean }[];
+};
 
 export function DashboardClient() {
   const auth = useAuth();
-  const org = useResource<Organization>("/api/v1/organizations/current/");
-  const audit = useResource<CursorPage<Audit>>(
-    "/api/v1/audit-logs/?page_size=5",
+  const organizations = useResource<PlatformList>(
+    "/api/v1/platform/organizations/",
   );
-
+  const identities = useResource<PlatformList>("/api/v1/platform/identities");
+  const services = useResource<ServiceStatus>("/api/v1/platform/services");
+  const cards = [
+    ["Organizations", organizations, "/organizations"],
+    ["Identities", identities, "/members"],
+  ] as const;
   return (
-    <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
       <header>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-slate-500">
-          {org.data?.display_name || org.data?.name || "Current workspace"} ·
-          Real organization data
+        <p className="text-xs font-medium uppercase tracking-wider text-indigo-700">
+          Platform administration
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold">
+          Welcome, {auth.profile?.display_name || "Super Admin"}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          GlobalChat platform health and metadata. This account does not need a
+          company membership.
         </p>
       </header>
-      {org.error && <ErrorState description={org.error} retry={org.reload} />}
-      <section className="grid gap-4 md:grid-cols-3">
-        <LoadedMetric title="Members" path="/api/v1/members/?page_size=50" />
-        <LoadedMetric title="Branches" path="/api/v1/branches/?page_size=50" />
-        <LoadedMetric title="Teams" path="/api/v1/teams/?page_size=50" />
+      <section className="grid gap-3 sm:grid-cols-2">
+        {cards.map(([label, resource, href]) => (
+          <Card key={label} className="p-5">
+            <Link
+              href={href}
+              className="text-sm font-medium text-indigo-700 hover:underline"
+            >
+              {label}
+            </Link>
+            {resource.loading ? (
+              <div className="mt-3 h-8 w-12 animate-pulse rounded bg-slate-100" />
+            ) : resource.error ? (
+              <ErrorState
+                description={resource.error}
+                retry={resource.reload}
+              />
+            ) : (
+              <p className="mt-2 text-3xl font-semibold tabular-nums">
+                {resource.data?.total ?? resource.data?.items?.length ?? 0}
+              </p>
+            )}
+          </Card>
+        ))}
       </section>
       <Card className="p-5">
-        <h2 className="font-semibold">Recent organization activity</h2>
-        {!auth.permissions.has("audit.view") ? (
-          <p className="mt-3 text-sm text-slate-500">
-            Audit access is restricted by your role.
+        <h2 className="font-semibold">Service health</h2>
+        {services.loading ? (
+          <p role="status" className="mt-3">
+            Checking services…
           </p>
-        ) : audit.loading ? (
-          <p role="status">Loading activity…</p>
-        ) : audit.error ? (
-          <ErrorState description={audit.error} retry={audit.reload} />
-        ) : audit.data?.results.length ? (
-          <ul className="divide-y">
-            {audit.data.results.map((row) => (
-              <li
-                className="flex flex-wrap justify-between gap-2 py-3 text-sm"
-                key={row.id}
-              >
-                <span>
-                  {row.action} · {row.resource_type}
+        ) : services.error ? (
+          <ErrorState description={services.error} retry={services.reload} />
+        ) : (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {services.data?.items?.map((service) => (
+              <li key={service.name} className="rounded border p-3 text-sm">
+                <span className="font-medium">{service.name}</span>
+                <span
+                  className={
+                    service.live && service.ready
+                      ? "ml-2 text-emerald-700"
+                      : "ml-2 text-rose-700"
+                  }
+                >
+                  {service.live && service.ready
+                    ? "Healthy"
+                    : "Needs attention"}
                 </span>
-                <time dateTime={row.created_at}>
-                  {new Date(row.created_at).toLocaleString()}
-                </time>
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="mt-3 text-sm">No activity recorded.</p>
         )}
-        <Button
-          variant="outline"
-          className="mt-3"
-          onClick={() => {
-            org.reload();
-            audit.reload();
-          }}
-        >
-          Refresh overview
-        </Button>
-      </Card>
-      <Card className="p-5 text-sm text-slate-500">
-        <h2 className="font-semibold text-slate-900">
-          Unavailable platform analytics
-        </h2>
-        <p className="mt-2">
-          Growth charts, online-user counts, system-wide conversations and
-          billing metrics have no authorized backend contract. No simulated
-          statistics are shown.
-        </p>
-        <Link
-          className="mt-3 inline-block text-indigo-700 underline"
-          href="/organizations"
-        >
-          Open current organization
-        </Link>
       </Card>
     </main>
   );

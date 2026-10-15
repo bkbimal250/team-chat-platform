@@ -41,9 +41,40 @@ class MessageStatus(str, enum.Enum):
 class ConversationProjection(Base):
     __tablename__ = "conversation_projections"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
     type: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
+
+
+class OrganizationMemberProjection(Base):
+    __tablename__ = "organization_member_projections"
+    __table_args__ = (UniqueConstraint("organization_id", "member_id", name="org_member_projection_unique"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    status: Mapped[str] = mapped_column(String(20))
+
+
+class PersonalBroadcastList(Base):
+    __tablename__ = "personal_broadcast_lists"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
+    owner_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PersonalBroadcastRecipient(Base):
+    __tablename__ = "personal_broadcast_recipients"
+    __table_args__ = (
+        UniqueConstraint("list_id", "recipient_identity_id", name="broadcast_recipient_unique"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
+    list_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("personal_broadcast_lists.id", ondelete="CASCADE")
+    )
+    contact_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    recipient_identity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
 
 
 class ConversationMemberProjection(Base):
@@ -51,7 +82,7 @@ class ConversationMemberProjection(Base):
     __table_args__ = (UniqueConstraint("conversation_id", "member_id"),)
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
@@ -86,17 +117,20 @@ class Message(Base):
         Index("message_reply", "reply_to_message_id"),
     )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sender_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sender_member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sender_device_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     type: Mapped[str] = mapped_column(String(20))
     text: Mapped[str | None] = mapped_column(Text)
+    e2ee_envelope: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     attachment: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     reply_to_message_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("messages.id")
     )
+    forward_from_message_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    forward_from_conversation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     client_message_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     sequence: Mapped[int] = mapped_column(BigInteger)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
@@ -108,7 +142,7 @@ class Message(Base):
 class MediaProjection(Base):
     __tablename__ = "media_projections"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     uploader_member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     status: Mapped[str] = mapped_column(String(20))
@@ -120,7 +154,7 @@ class MessageReaction(Base):
     __table_args__ = (UniqueConstraint("message_id", "member_id", "reaction"),)
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
     message_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("messages.id"))
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     reaction: Mapped[str] = mapped_column(String(64))
@@ -131,7 +165,7 @@ class ConversationReadState(Base):
     __tablename__ = "conversation_read_states"
     __table_args__ = (UniqueConstraint("organization_id", "conversation_id", "member_id"),)
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     member_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     last_delivered_sequence: Mapped[int] = mapped_column(BigInteger, default=0)
@@ -154,7 +188,7 @@ class OutboxEvent(Base):
     event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
     event_type: Mapped[str] = mapped_column(String(100))
     aggregate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     correlation_id: Mapped[str] = mapped_column(String(128))
     payload: Mapped[dict] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(20), default="PENDING")

@@ -67,6 +67,7 @@ export const configs: Record<string, ResourceConfig> = {
     fields: [
       name,
       { name: "description", label: "Description" },
+      { name: "branch_id", label: "Branch" },
       {
         name: "type",
         label: "Type",
@@ -86,6 +87,10 @@ export const configs: Record<string, ResourceConfig> = {
     title: "Members",
     columns: [
       { key: "display_name", label: "Member" },
+      { key: "recipient_phone_masked", label: "Phone" },
+      { key: "roles", label: "Roles" },
+      { key: "branches", label: "Branches" },
+      { key: "teams", label: "Teams" },
       { key: "employee_code", label: "Employee code" },
       { key: "department", label: "Department" },
       { key: "status", label: "Status" },

@@ -1,53 +1,43 @@
 import {
-  Activity,
-  Bell,
   Building2,
-  FolderKanban,
   LayoutDashboard,
-  MessageSquare,
   MonitorSmartphone,
   ScrollText,
   Settings,
   ShieldCheck,
   Users,
-  UsersRound,
 } from "lucide-react";
+
 export const navigation = [
   {
     label: "Overview",
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
   },
   {
-    label: "Organization",
-    items: [
-      { label: "Organizations", href: "/organizations", icon: Building2 },
-      { label: "Branches", href: "/branches", icon: FolderKanban },
-      { label: "Teams", href: "/teams", icon: UsersRound },
-      { label: "Members", href: "/members", icon: Users },
-      { label: "Invitations", href: "/invitations", icon: Users },
-      { label: "Roles", href: "/roles", icon: ShieldCheck },
-    ],
-  },
-  {
-    label: "Communication",
-    items: [
-      { label: "Conversations", href: "/conversations", icon: MessageSquare },
-      { label: "Notifications", href: "/notifications", icon: Bell },
-    ],
-  },
-  {
-    label: "Access & Security",
-    items: [
-      { label: "Devices", href: "/devices", icon: MonitorSmartphone },
-      { label: "Security", href: "/security", icon: ShieldCheck },
-      { label: "Audit Logs", href: "/audit-logs", icon: ScrollText },
-    ],
-  },
-  {
     label: "Platform",
     items: [
-      { label: "System Health", href: "/system", icon: Activity },
-      { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Organizations", href: "/organizations", icon: Building2 },
+      { label: "Users", href: "/users", icon: Users },
+      { label: "Platform Admins", href: "/platform-admins", icon: ShieldCheck },
     ],
+  },
+  {
+    label: "Identity & Access",
+    items: [
+      { label: "Sessions", href: "/sessions", icon: MonitorSmartphone },
+      { label: "Roles & Access", href: "/roles", icon: ShieldCheck },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [{ label: "Services", href: "/system", icon: LayoutDashboard }],
+  },
+  {
+    label: "Security",
+    items: [{ label: "Audit Logs", href: "/audit-logs", icon: ScrollText }],
+  },
+  {
+    label: "System",
+    items: [{ label: "Settings", href: "/settings", icon: Settings }],
   },
 ];

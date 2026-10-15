@@ -47,7 +47,7 @@ class TypingBroadcaster:
                         {
                             "target_instance_id": target.instance_id,
                             "connection_id": target.id,
-                            "organization_id": str(org),
+                            "organization_id": str(org) if org else None,
                             "delivery_id": str(uuid4()),
                             "event": frame,
                         }

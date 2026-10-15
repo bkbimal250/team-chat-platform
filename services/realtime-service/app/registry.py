@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.auth import Principal
+from app.core import ProtocolError
 
 
 @dataclass
@@ -12,6 +13,8 @@ class Connection:
     principal: Principal
     queue: asyncio.Queue
     subscriptions: set[UUID] = field(default_factory=set)
+    presence_watches: set[UUID] = field(default_factory=set)
+    resync_required: bool = False
     connected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     instance_id: str = "local"
 
@@ -28,10 +31,18 @@ class RemoteConnection:
 class Registry:
     """Local socket registry, optionally mirrored to shared Redis metadata."""
 
-    def __init__(self, max_queue: int = 100, metadata_registry=None, instance_id: str = "local"):
+    def __init__(
+        self,
+        max_queue: int = 100,
+        metadata_registry=None,
+        instance_id: str = "local",
+        membership_store=None,
+    ):
         self.max_queue, self.connections = max_queue, {}
         self.metadata_registry, self.instance_id = metadata_registry, instance_id
+        self.membership_store = membership_store
         self.typing = {}
+        self.presence_watchers = {}
 
     async def register(self, principal: Principal) -> Connection:
         for existing in list(self.connections.values()):
@@ -55,11 +66,65 @@ class Registry:
     async def remove(self, connection_id: str):
         connection = self.connections.pop(connection_id, None)
         if connection:
+            for identity_id in connection.presence_watches:
+                watchers = self.presence_watchers.get(identity_id)
+                if watchers:
+                    watchers.discard(connection_id)
             self.typing = {
                 k: v for k, v in self.typing.items() if k[2] != connection.principal.member_id
             }
             if self.metadata_registry:
                 await self.metadata_registry.remove(connection.id)
+
+    async def workspace_delivery_allowed(self, principal: Principal) -> bool:
+        if principal.organization_id is None:
+            return True
+        if self.membership_store is None:
+            return True
+        return await self.membership_store.is_active(principal.organization_id, principal.member_id)
+
+    async def revoke_workspace_member(
+        self, organization_id: UUID, member_id: UUID, status: str
+    ) -> None:
+        if self.membership_store:
+            await self.membership_store.set_status(organization_id, member_id, status)
+        for connection in list(self.connections.values()):
+            if (
+                connection.principal.organization_id == organization_id
+                and connection.principal.member_id == member_id
+            ):
+                connection.subscriptions.clear()
+                connection.presence_watches.clear()
+                self.typing = {
+                    k: v
+                    for k, v in self.typing.items()
+                    if k[0] != organization_id or k[2] != member_id
+                }
+        if self.metadata_registry:
+            await self.metadata_registry.revoke_workspace_member(organization_id, member_id, status)
+
+    def watch_presence(self, connection: Connection, identity_id: UUID) -> None:
+        connection.presence_watches.add(identity_id)
+        self.presence_watchers.setdefault(identity_id, set()).add(connection.id)
+
+    async def broadcast_presence(self, identity_id: UUID, online: bool, authorize=None) -> None:
+        frame = {
+            "version": 1,
+            "type": "presence.updated.v1",
+            "payload": {"identity_id": str(identity_id), "online": online},
+        }
+        for connection_id in list(self.presence_watchers.get(identity_id, ())):
+            connection = self.connections.get(connection_id)
+            if connection and identity_id in connection.presence_watches:
+                if authorize is None:
+                    continue
+                try:
+                    await authorize(connection.principal, identity_id)
+                except ProtocolError:
+                    connection.presence_watches.discard(identity_id)
+                    self.presence_watchers.get(identity_id, set()).discard(connection_id)
+                    continue
+                await self.enqueue(connection, frame)
 
     async def subscribe(self, connection: Connection, conversation_id: UUID):
         connection.subscriptions.add(conversation_id)
@@ -72,14 +137,34 @@ class Registry:
             await self.metadata_registry.unsubscribe(connection, conversation_id)
 
     async def recipients(self, organization_id: UUID, conversation_id: UUID):
-        return [
-            c
-            for c in self.connections.values()
-            if c.principal.organization_id == organization_id and conversation_id in c.subscriptions
-        ]
+        result = []
+        for c in self.connections.values():
+            if c.principal.organization_id != organization_id:
+                continue
+            if conversation_id not in c.subscriptions:
+                continue
+            if not await self.workspace_delivery_allowed(c.principal):
+                continue
+            result.append(c)
+        return result
 
     async def enqueue(self, connection: Connection, payload: dict) -> bool:
         if connection.queue.full():
+            if not connection.resync_required:
+                connection.resync_required = True
+                resync = {
+                    "version": 1,
+                    "type": "connection.resync_required.v1",
+                    "payload": {
+                        "reason": "QUEUE_OVERFLOW",
+                        "hint": "Resubscribe and backfill missed messages from Messaging history.",
+                    },
+                }
+                try:
+                    connection.queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+                connection.queue.put_nowait(resync)
             return False
         connection.queue.put_nowait(payload)
         return True
@@ -108,6 +193,10 @@ class Registry:
             ):
                 connection.subscriptions.discard(conversation_id)
         self.typing.pop((organization_id, conversation_id, member_id), None)
+        if self.metadata_registry:
+            await self.metadata_registry.invalidate_member(
+                organization_id, member_id, conversation_id
+            )
 
     async def invalidate_conversation(self, organization_id: UUID, conversation_id: UUID):
         for connection in self.connections.values():
@@ -116,13 +205,16 @@ class Registry:
         self.typing = {
             k: v for k, v in self.typing.items() if k[:2] != (organization_id, conversation_id)
         }
+        if self.metadata_registry:
+            await self.metadata_registry.invalidate_conversation(organization_id, conversation_id)
 
 
 class RedisMetadataRegistry:
     """Shared, serializable routing metadata. WebSocket objects never leave the owner process."""
 
-    def __init__(self, redis, instance_id: str):
+    def __init__(self, redis, instance_id: str, membership_store=None):
         self.redis, self.instance_id = redis, instance_id
+        self.membership_store = membership_store
 
     @staticmethod
     def _connection_key(connection_id: str) -> str:
@@ -229,9 +321,30 @@ class RedisMetadataRegistry:
     async def unsubscribe(self, connection: Connection, conversation_id: UUID):
         await self.redis.srem(self._subscription_key(connection.id), str(conversation_id))
 
+    async def workspace_delivery_allowed(self, record: dict) -> bool:
+        if record["organization_id"] == "None":
+            return True
+        if not self.membership_store:
+            return True
+        return await self.membership_store.is_active(
+            UUID(record["organization_id"]), UUID(record["member_id"])
+        )
+
+    async def revoke_workspace_member(
+        self, organization_id: UUID, member_id: UUID, status: str
+    ) -> None:
+        if self.membership_store:
+            await self.membership_store.set_status(organization_id, member_id, status)
+        for record in await self.get_organization_connections(organization_id):
+            if record["member_id"] != str(member_id):
+                continue
+            await self.redis.delete(self._subscription_key(record["connection_id"]))
+
     async def recipients(self, organization_id: UUID, conversation_id: UUID):
         recipients = []
         for record in await self.get_organization_connections(organization_id):
+            if not await self.workspace_delivery_allowed(record):
+                continue
             if await self.redis.sismember(
                 self._subscription_key(record["connection_id"]), str(conversation_id)
             ):
@@ -242,7 +355,9 @@ class RedisMetadataRegistry:
                             UUID(record["identity_id"]),
                             UUID(record["session_id"]),
                             UUID(record["device_id"]),
-                            UUID(record["organization_id"]),
+                            UUID(record["organization_id"])
+                            if record["organization_id"] != "None"
+                            else None,
                             UUID(record["member_id"]),
                         ),
                         instance_id=record["instance_id"],

@@ -5,6 +5,11 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    CONTACT_MATCHING_SECRET: str | None = Field(None, min_length=32, repr=False)
+    AUTH_EMAIL_PASSWORD_ENABLED: bool = True
+    AUTH_PHONE_OTP_ENABLED: bool = False
+    PASSWORD_RESET_TTL: int = Field(900, ge=60, le=3600, env="PASSWORD_RESET_TTL")
+    EMAIL_VERIFICATION_TTL: int = Field(86400, ge=60, le=604800, env="EMAIL_VERIFICATION_TTL")
     # General
     APP_ENV: Literal["development", "staging", "production"] = Field("development", env="APP_ENV")
     SERVICE_NAME: str = Field("identity-service", env="SERVICE_NAME")
@@ -84,6 +89,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_otp_provider(self):
+        if self.APP_ENV in {"staging", "production"}:
+            if not self.CONTACT_MATCHING_SECRET:
+                raise ValueError("CONTACT_MATCHING_SECRET is required in staging/production")
+            if len(self.SERVICE_AUTH_TOKEN) < 32:
+                raise ValueError("SERVICE_AUTH_TOKEN must be at least 32 characters")
+            for name, value in (
+                ("ACCESS_TOKEN_PRIVATE_KEY", self.ACCESS_TOKEN_PRIVATE_KEY),
+                ("ACCESS_TOKEN_PUBLIC_KEY", self.ACCESS_TOKEN_PUBLIC_KEY),
+            ):
+                if not value or value.strip() in {"test-key", "private", "public"}:
+                    raise ValueError(f"{name} must be configured for {self.APP_ENV}")
         if self.APP_ENV == "production" and self.OTP_PROVIDER not in {"sms", "vonage_verify"}:
             raise ValueError("production requires an external OTP provider")
         if self.OTP_PROVIDER == "sms":

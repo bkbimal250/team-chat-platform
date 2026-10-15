@@ -22,6 +22,13 @@ class FakeDb:
     async def flush(self):
         pass
 
+    async def scalars(self, *_):
+        class Result:
+            def all(self):
+                return []
+
+        return Result()
+
 
 def identity_event():
     return {

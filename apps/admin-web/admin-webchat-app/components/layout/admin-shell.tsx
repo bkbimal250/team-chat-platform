@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { PanelLeftClose } from "lucide-react";
 import { useState } from "react";
 import { navigation } from "@/config/navigation";
+import { Modal } from "@/components/ui/modal";
 import { Topbar } from "./topbar";
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -18,10 +19,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </p>
           {group.items.map((item) => {
             const Icon = item.icon;
+            const active =
+              path === item.href ||
+              (item.href !== "/dashboard" && path.startsWith(`${item.href}/`));
             return (
               <Link
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${path === item.href ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${active ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`}
                 href={item.href}
                 key={item.href}
                 title={collapsed ? item.label : undefined}
@@ -46,7 +51,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <>
               <strong className="ml-2">GlobalChat</strong>
               <span className="block text-xs text-slate-400">
-                Admin Console
+                Platform Administration
               </span>
             </>
           )}
@@ -66,19 +71,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <PanelLeftClose size={18} />
         </button>
       </aside>
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
-          onClick={() => setOpen(false)}
-        >
-          <aside
-            className="h-full w-72 bg-slate-950 p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {nav}
-          </aside>
-        </div>
-      )}
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Workspace navigation"
+      >
+        <div className="mt-3 rounded-lg bg-slate-950 p-4">{nav}</div>
+      </Modal>
       <div className={collapsed ? "lg:pl-[72px]" : "lg:pl-64"}>
         <Topbar onMenu={() => setOpen(true)} />
         {children}

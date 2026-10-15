@@ -52,4 +52,13 @@ tenant permissions; the remaining services derive identity and organization cont
 forwarded bearer JWT. Only Identity OTP request/verification and QR status/consume retain their
 current public authentication behavior.
 
-Browser clients use `https://api.michat.in`; realtime remains `wss://ws.michat.in`.
+## HTTP gateway vs realtime WebSocket ingress
+
+Browser and mobile clients call **HTTPS JSON APIs** through this gateway (`https://api.michat.in` in
+production, port `8008` locally). **WebSocket realtime** is not proxied by the gateway: clients connect
+directly to the Realtime service public endpoint (`REALTIME_PUBLIC_WSS_URL`, default
+`wss://ws.michat.in/api/v1/realtime`, local `ws://127.0.0.1:8007/api/v1/realtime`). The gateway still
+configures `REALTIME_URL` for operator health aggregation on `/api/v1/platform/services` only.
+
+Path normalization: trailing slashes on public API paths are normalized before routing so
+`/api/v1/platform/organizations` and `/api/v1/platform/organizations/` resolve identically.

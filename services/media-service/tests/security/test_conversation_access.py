@@ -14,27 +14,42 @@ from app.security import Principal, authorize_conversation
 async def test_production_authorization_uses_real_conversation_membership(monkeypatch):
     cid = uuid4()
     token = "Bearer synthetic-secret"
-    p = Principal(uuid4(), uuid4(), uuid4(), uuid4(), authorization=token)
+    identity = uuid4()
+    p = Principal(None, identity, identity, uuid4(), authorization=token)
     response = Mock()
     response.__enter__ = Mock(return_value=response)
     response.__exit__ = Mock(return_value=False)
-    response.read.return_value = json.dumps({"id": str(cid), "status": "ACTIVE"}).encode()
+    response.read.return_value = json.dumps(
+        {
+            "allowed": True,
+            "conversation_id": str(cid),
+            "organization_id": None,
+            "member_id": str(p.member_id),
+            "user_id": str(p.user_id),
+        }
+    ).encode()
     opener = Mock()
     opener.open.return_value = response
     monkeypatch.setattr("urllib.request.build_opener", lambda *args: opener)
     monkeypatch.setattr(
         "app.security.get_settings",
         lambda: SimpleNamespace(
-            conversation_api_url="http://conversation.globalchat.internal:8003"
+            conversation_api_url="http://conversation.globalchat.internal:8003",
+            internal_service_token="service-secret",
         ),
     )
     await authorize_conversation(p, cid)
     request = opener.open.call_args.args[0]
     assert (
         request.full_url
-        == f"http://conversation.globalchat.internal:8003/api/v1/conversations/{cid}"
+        == f"http://conversation.globalchat.internal:8003/internal/v1/conversations/{cid}/authorize"
     )
-    assert request.get_header("Authorization") == token
+    assert request.get_header("X-internal-service-token") == "service-secret"
+    assert json.loads(request.data) == {
+        "organization_id": None,
+        "member_id": str(p.member_id),
+        "identity_id": str(p.user_id),
+    }
     assert token not in repr(p)
 
 
@@ -60,7 +75,8 @@ async def test_conversation_authorization_fails_closed(monkeypatch, failure):
     monkeypatch.setattr(
         "app.security.get_settings",
         lambda: SimpleNamespace(
-            conversation_api_url="http://conversation.globalchat.internal:8003"
+            conversation_api_url="http://conversation.globalchat.internal:8003",
+            internal_service_token="service-secret",
         ),
     )
     with pytest.raises(HTTPException):
@@ -68,12 +84,13 @@ async def test_conversation_authorization_fails_closed(monkeypatch, failure):
 
 
 @pytest.mark.asyncio
-async def test_only_uploader_can_mutate_but_participants_can_download():
+@pytest.mark.parametrize("personal", [False, True])
+async def test_only_uploader_can_mutate_but_participants_can_download(personal):
     from app.service import MediaRecord, MediaService
     from app.storage import FakePrivateStorage
 
     cid = uuid4()
-    owner = Principal(uuid4(), uuid4(), uuid4(), uuid4(), frozenset({cid}))
+    owner = Principal(None if personal else uuid4(), uuid4(), uuid4(), uuid4(), frozenset({cid}))
     peer = Principal(owner.organization_id, uuid4(), uuid4(), uuid4(), frozenset({cid}))
     record = MediaRecord(
         uuid4(),
@@ -94,6 +111,9 @@ async def test_only_uploader_can_mutate_but_participants_can_download():
     )
     service = MediaService(FakePrivateStorage())
     service.media[record.id] = record
-    assert await service._owned(peer, record.id, require_uploader=False) == record
+    service.references.add((record.id, str(uuid4()), cid))
+    record.reference_count = 1
+    peer = Principal(owner.organization_id, peer.user_id, peer.member_id, peer.device_id, frozenset({cid}))
+    assert await service._get_media(peer, record.id) == record
     with pytest.raises(HTTPException):
         await service._owned(peer, record.id)

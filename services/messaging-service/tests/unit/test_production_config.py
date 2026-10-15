@@ -13,7 +13,7 @@ from app.core import Settings
         {"rabbitmq_url": ""},
         {"rabbitmq_url": "amqp://guest:guest@broker.internal/%2F"},
         {"internal_service_token": ""},
-        {"internal_service_token": "local-development-token"},
+        {"jwt_public_key": ""},
     ],
 )
 def test_production_rejects_missing_or_unsafe_dependencies(overrides):
@@ -21,7 +21,8 @@ def test_production_rejects_missing_or_unsafe_dependencies(overrides):
         "app_env": "production",
         "database_url": "postgresql+asyncpg://service:secret@rds.internal/messages",
         "rabbitmq_url": "amqp://service:secret@mq.internal/%2F",
-        "internal_service_token": "strong-test-only-token",
+        "internal_service_token": "strong-test-only-token-32-characters-min",
+        "jwt_public_key": "production-public-key",
     }
     values.update(overrides)
     with pytest.raises(ValidationError):
@@ -33,7 +34,8 @@ def test_production_accepts_external_injected_dependencies():
         app_env="production",
         database_url="postgresql+asyncpg://service:secret@rds.internal/messages",
         rabbitmq_url="amqp://service:secret@mq.internal/%2F",
-        internal_service_token="strong-test-only-token",
+        internal_service_token="strong-test-only-token-32-characters-minimum",
+        jwt_public_key="production-public-key",
     )
     assert configured.app_env == "production"
 

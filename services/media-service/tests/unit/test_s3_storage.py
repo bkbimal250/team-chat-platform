@@ -60,6 +60,8 @@ def s3_settings():
         aws_region="ap-south-1",
         media_s3_bucket="globalchat-private",
         jwt_public_key="test-public-key",
+        internal_service_token="production-internal-token-32-characters",
+        conversation_api_url="http://conversation.internal:8003",
     )
 
 

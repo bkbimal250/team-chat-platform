@@ -120,7 +120,7 @@ export function QRScanner({
   return (
     <section className="space-y-5">
       <h2 className="text-xl font-semibold">Link a device</h2>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-aurora-muted">
         Scan the QR code shown on the device you want to link.
       </p>
       <video

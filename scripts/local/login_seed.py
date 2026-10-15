@@ -11,8 +11,10 @@ for index in [1, 2]:
         {"phone_number": f"+91900000000{index}", "purpose": "LOGIN"},
     )
     if status != 202 or not challenge.get("development_code"):
+        code = challenge.get("error", {}).get("code", "not_issued")
         raise SystemExit(
-            "Local development OTP unavailable; no external provider attempted"
+            f"Local development OTP unavailable (HTTP {status}, {code}); "
+            "no external provider attempted"
         )
     status, tokens = call(
         "/api/v1/auth/otp/verify",

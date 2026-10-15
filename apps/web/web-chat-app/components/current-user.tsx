@@ -16,7 +16,7 @@ export function CurrentUser({ token }: { token: string | null }) {
     };
   }, [token]);
   return (
-    <p className="mt-1 truncate text-xs text-slate-500">
+    <p className="mt-1 truncate text-xs text-aurora-muted">
       {name || "Your workspace conversations"}
     </p>
   );

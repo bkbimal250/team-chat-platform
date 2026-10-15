@@ -71,6 +71,7 @@ def test_member_v2_events_include_authoritative_projection_identity(context):
         assert event.organization_id == context.organization_id
         assert event.payload["member_id"] == str(member.id)
         assert event.payload["user_id"] == str(member.user_id)
+        assert event.payload["identity_id"] == str(member.user_id)
         assert event.payload["participant_kind"] == "HUMAN"
         assert event.payload["status"]
 

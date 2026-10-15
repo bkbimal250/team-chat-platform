@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
+import httpx
 import jwt
 from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy import func, select
@@ -13,13 +14,22 @@ from app.models import (
     BlockProjection,
     Conversation,
     ConversationMember,
+    ConversationSettings,
     CStatus,
     CType,
     MemberState,
     MRole,
     MStatus,
 )
-from app.schemas import DirectIn, GroupIn, MemberIds, StateIn, Transfer, UpdateConversation
+from app.schemas import (
+    DirectIn,
+    GroupIn,
+    MemberIds,
+    PersonalDirectIn,
+    StateIn,
+    Transfer,
+    UpdateConversation,
+)
 from app.services import Authorization, ConversationService, event
 
 router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
@@ -38,10 +48,16 @@ async def principal(
             algorithms=[settings().jwt_algorithm],
             issuer=settings().jwt_issuer,
             audience=settings().jwt_audience,
-            options={"require": ["sub", "org", "mid", "exp"]},
+            options={"require": ["sub", "exp"]},
         )
-        return UUID(claims["org"]), UUID(claims["mid"])
-    except (jwt.PyJWTError, KeyError, ValueError) as exc:
+        if ("org" in claims) != ("mid" in claims):
+            raise ValueError("Incomplete scope")
+        return (
+            (UUID(claims["org"]), UUID(claims["mid"]))
+            if "org" in claims
+            else (None, UUID(claims["sub"]))
+        )
+    except (jwt.PyJWTError, KeyError, ValueError, TypeError) as exc:
         raise DomainError("NOT_AUTHENTICATED", "Authentication is required.", 401) from exc
 
 
@@ -66,6 +82,7 @@ async def get_conversation(cid, org, db):
 def out(c, m=None, s=None, count=None):
     return {
         "id": str(c.id),
+        "scope": "WORKSPACE" if c.organization_id else "PERSONAL",
         "type": c.type,
         "title": c.title,
         "description": c.description,
@@ -85,13 +102,63 @@ def out(c, m=None, s=None, count=None):
     }
 
 
+async def personal_profiles(session, actor, conversation_ids):
+    peers = (
+        await session.execute(
+            select(ConversationMember.conversation_id, ConversationMember.member_id).where(
+                ConversationMember.conversation_id.in_(conversation_ids),
+                ConversationMember.organization_id.is_(None),
+                ConversationMember.member_id != actor,
+            )
+        )
+    ).all()
+    profiles = {}
+    try:
+        async with httpx.AsyncClient(timeout=5, follow_redirects=False) as client:
+            identities = list({str(member) for _, member in peers})
+            for offset in range(0, len(identities), 200):
+                response = await client.post(
+                    settings().user_service_url.rstrip("/") + "/internal/v1/contacts/profiles",
+                    headers={"X-Internal-Service-Token": settings().internal_service_token},
+                    json={"identity_ids": identities[offset : offset + 200]},
+                )
+                response.raise_for_status()
+                profiles.update(response.json())
+    except (httpx.HTTPError, ValueError):
+        raise DomainError(
+            "PROFILE_UNAVAILABLE", "Conversation profiles are temporarily unavailable.", 503
+        ) from None
+    return {
+        cid: profiles.get(str(member), {"title": "Unavailable account", "avatar_media_id": None})
+        for cid, member in peers
+    }
+
+
 @router.post("/direct", status_code=201)
 async def direct(
     payload: DirectIn, request: Request, p=Depends(principal), session: AsyncSession = Depends(db)
 ):
+    if p[0] is None:
+        raise DomainError("WORKSPACE_REQUIRED", "Use a saved contact for personal chat.", 403)
     async with session.begin():
         c, created = await ConversationService().direct(
             session, *p, payload.member_id, request.state.correlation_id
+        )
+    return out(c) | {"created": created}
+
+
+@router.post("/personal/direct", status_code=201)
+async def personal_direct(
+    payload: PersonalDirectIn,
+    request: Request,
+    p=Depends(principal),
+    session: AsyncSession = Depends(db),
+):
+    if p[0] is not None:
+        raise DomainError("PERSONAL_CONTEXT_REQUIRED", "Switch to your personal account.", 403)
+    async with session.begin():
+        c, created = await ConversationService().personal_direct(
+            session, p[1], payload.contact_id, request.state.correlation_id
         )
     return out(c) | {"created": created}
 
@@ -100,8 +167,23 @@ async def direct(
 async def group(
     payload: GroupIn, request: Request, p=Depends(principal), session: AsyncSession = Depends(db)
 ):
+    if p[0] is None:
+        raise DomainError("WORKSPACE_REQUIRED", "A workspace is required.", 403)
     async with session.begin():
         c = await ConversationService().group(session, *p, payload, request.state.correlation_id)
+    return out(c)
+
+
+@router.post("/personal/groups", status_code=201)
+async def personal_group(
+    payload: GroupIn, request: Request, p=Depends(principal), session: AsyncSession = Depends(db)
+):
+    if p[0] is not None:
+        raise DomainError("PERSONAL_CONTEXT_REQUIRED", "Switch to your personal account.", 403)
+    async with session.begin():
+        c = await ConversationService().personal_group(
+            session, p[1], payload, request.state.correlation_id
+        )
     return out(c)
 
 
@@ -114,6 +196,8 @@ async def list_conversations(
     session: AsyncSession = Depends(db),
 ):
     org, mid = p
+    if org is not None:
+        await ConversationService().ensure_workspace_member_active(session, org, mid)
     counts = (
         select(ConversationMember.conversation_id, func.count(ConversationMember.id).label("count"))
         .where(
@@ -145,12 +229,25 @@ async def list_conversations(
         q = q.where(MemberState.is_pinned == pinned)
     rows = (await session.execute(q)).all()
     summary = await summaries(session, org, mid, [c.id for c, _, _, _ in rows])
-    return [out(c, m, s, count) | summary[c.id] for c, m, s, count in rows]
+    profiles = (
+        await personal_profiles(session, mid, [c.id for c, _, _, _ in rows]) if org is None else {}
+    )
+    rows.sort(
+        key=lambda row: (
+            summary[row[0].id]["last_message_at"] or row[0].created_at,
+            row[0].created_at,
+            str(row[0].id),
+        ),
+        reverse=True,
+    )
+    return [out(c, m, s, count) | summary[c.id] | profiles.get(c.id, {}) for c, m, s, count in rows]
 
 
 @router.get("/{cid}")
 async def get(cid: UUID, p=Depends(principal), session: AsyncSession = Depends(db)):
     c = await get_conversation(cid, p[0], session)
+    if p[0] is not None:
+        await ConversationService().ensure_workspace_member_active(session, p[0], p[1])
     m = await ConversationService().mine(session, c.id, p[1])
     Authorization.view(m)
     s = (
@@ -160,7 +257,8 @@ async def get(cid: UUID, p=Depends(principal), session: AsyncSession = Depends(d
             )
         )
     ).scalar_one()
-    return out(c, m, s)
+    profiles = await personal_profiles(session, p[1], [c.id]) if p[0] is None else {}
+    return out(c, m, s) | profiles.get(c.id, {})
 
 
 @router.post("/{cid}/members")
@@ -217,6 +315,18 @@ async def close(
             await event(
                 session, "conversation.closed.v1", c, request.state.correlation_id, ["status"]
             )
+    return out(c)
+
+
+@router.post("/{cid}/delete")
+async def delete_conversation(
+    cid: UUID, request: Request, p=Depends(principal), session: AsyncSession = Depends(db)
+):
+    async with session.begin():
+        c = await get_conversation(cid, p[0], session)
+        await ConversationService().delete_group(
+            session, c, p[1], request.state.correlation_id
+        )
     return out(c)
 
 
@@ -304,7 +414,15 @@ async def update(
         c = await get_conversation(cid, p[0], session)
         if c.type != CType.GROUP:
             raise DomainError("GROUP_REQUIRED", "Only groups can be updated.", 422)
-        Authorization.manage(await ConversationService().mine(session, c.id, p[1]))
+        mine = await ConversationService().mine(session, c.id, p[1])
+        Authorization.view(mine)
+        group_settings = (
+            await session.execute(
+                select(ConversationSettings).where(ConversationSettings.conversation_id == c.id)
+            )
+        ).scalar_one_or_none()
+        if group_settings is None or group_settings.only_admins_can_edit_info:
+            Authorization.manage(mine)
         for k, v in payload.model_dump(exclude_unset=True).items():
             if k == "title" and (v is None or not v.strip()):
                 raise DomainError("GROUP_TITLE_INVALID", "A group title is required.", 422)
@@ -343,10 +461,32 @@ async def authorize_send(
     _: None = Depends(internal_service),
     session: AsyncSession = Depends(db),
 ):
-    organization_id, member_id = UUID(body["organization_id"]), UUID(body["member_id"])
+    organization_id = UUID(body["organization_id"]) if body.get("organization_id") else None
+    member_id = UUID(body["member_id"])
+    if organization_id is None and body.get("identity_id") != str(member_id):
+        raise DomainError("CONVERSATION_NOT_FOUND", "Conversation was not found.", 404)
     c = await get_conversation(cid, organization_id, session)
+    if organization_id is not None:
+        try:
+            await ConversationService().ensure_workspace_member_active(
+                session, organization_id, member_id
+            )
+        except DomainError:
+            return {
+                "allowed": False,
+                "conversation_id": str(c.id),
+                "organization_id": str(c.organization_id) if c.organization_id else None,
+                "conversation_type": c.type,
+                "member_id": str(member_id),
+                "user_id": None,
+                "member_status": None,
+            }
     member = await ConversationService().mine(session, c.id, member_id)
-    allowed = c.status == "ACTIVE" and member is not None and member.status == MStatus.ACTIVE
+    allowed = (
+        c.status == CStatus.ACTIVE
+        and member is not None
+        and member.status == MStatus.ACTIVE
+    )
     if allowed and c.type == CType.DIRECT:
         peers = (
             await session.scalars(
@@ -357,6 +497,24 @@ async def authorize_send(
             )
         ).all()
         for peer in peers:
+            if organization_id is None:
+                try:
+                    async with httpx.AsyncClient(timeout=5, follow_redirects=False) as client:
+                        response = await client.post(
+                            settings().user_service_url.rstrip("/")
+                            + "/internal/v1/contacts/communication",
+                            headers={"X-Internal-Service-Token": settings().internal_service_token},
+                            json={
+                                "identity_id": str(member_id),
+                                "peer_identity_id": str(peer.member_id),
+                            },
+                        )
+                    response.raise_for_status()
+                    allowed = allowed and response.json().get("allowed") is True
+                except (httpx.HTTPError, ValueError):
+                    raise DomainError(
+                        "AUTHORIZATION_UNAVAILABLE", "Conversation access is unavailable.", 503
+                    ) from None
             blocked = await session.scalar(
                 select(BlockProjection.id).where(
                     (
@@ -373,7 +531,7 @@ async def authorize_send(
     return {
         "allowed": allowed,
         "conversation_id": str(c.id),
-        "organization_id": str(c.organization_id),
+        "organization_id": str(c.organization_id) if c.organization_id else None,
         "conversation_type": c.type,
         "member_id": str(member_id),
         "user_id": str(member.user_id) if member and member.user_id else None,

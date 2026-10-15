@@ -17,9 +17,12 @@ def main() -> None:
     connection = pika.BlockingConnection(pika.URLParameters(os.environ["RABBITMQ_URL"]))
     channel = connection.channel()
     channel.exchange_declare("messaging.events", "topic", durable=True)
+    channel.exchange_declare("organization.events", "topic", durable=True)
     channel.queue_declare("media.references", durable=True)
     for key in ("message.created.v1", "message.deleted.v1"):
         channel.queue_bind("media.references", "messaging.events", key)
+    for key in ("member.left.v2", "member.removed.v2", "member.reactivated.v2"):
+        channel.queue_bind("media.references", "organization.events", key)
     channel.basic_qos(prefetch_count=int(os.getenv("RABBITMQ_PREFETCH_COUNT", "20")))
     channel.basic_consume(
         "media.references",

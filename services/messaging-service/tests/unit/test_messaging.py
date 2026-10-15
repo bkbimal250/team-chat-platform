@@ -25,7 +25,9 @@ async def test_closed_conversation_denies_send():
     conversation = SimpleNamespace(status="CLOSED", organization_id=p.organization_id, type="GROUP")
     member = SimpleNamespace(status="ACTIVE")
     with pytest.raises(DomainError):
-        await authorize(Db([conversation, member]), p, uuid4())
+        await authorize(
+            Db([SimpleNamespace(status="ACTIVE"), conversation, member]), p, uuid4()
+        )
 
 
 @pytest.mark.asyncio
@@ -38,7 +40,7 @@ async def test_system_message_is_not_public_send_type():
     member = SimpleNamespace(status="ACTIVE")
     with pytest.raises(DomainError):
         await send(
-            Db([conversation, member]),
+            Db([SimpleNamespace(status="ACTIVE"), conversation, member]),
             p,
             uuid4(),
             SendMessage(client_message_id=uuid4(), type="SYSTEM", text="x"),

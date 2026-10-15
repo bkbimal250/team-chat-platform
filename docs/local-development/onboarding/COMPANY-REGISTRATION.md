@@ -1,3 +1,5 @@
+> Preserved phone OTP reference: disabled in the current primary flow. Use [email/password authentication](EMAIL-PASSWORD-AUTH.md) for normal local registration/login. Enable OTP explicitly only for future capability tests.
+
 # Company registration
 
 Registration uses phone OTP, not email/password authentication. Email is normalized and unique in Identity but remains unverified; it is not a login credential. Existing member registration remains `invite_only`.

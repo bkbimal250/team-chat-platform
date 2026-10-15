@@ -1,13 +1,18 @@
 "use client";
 import { FormEvent, useState } from "react";
+import { MessageCircle, Search } from "lucide-react";
+import { iconSize } from "@/components/ui/icon-button";
+import { SearchField } from "@/components/ui/search-field";
 import { apiRequest } from "@/lib/api/client";
 import { Conversation } from "./api";
 export function WorkspacePeople({
   token,
   onConversation,
+  embedded = false,
 }: {
   token: string;
   onConversation: (row: Conversation) => void;
+  embedded?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [rows, setRows] = useState<
@@ -19,7 +24,9 @@ export function WorkspacePeople({
     }[]
   >([]);
   const [message, setMessage] = useState(
-    "Search people in your workspace to start a direct chat.",
+    embedded
+      ? "Search coworkers by name to start a direct chat."
+      : "Search people in your workspace to start a direct chat.",
   );
   const [busy, setBusy] = useState(false);
   async function search(event: FormEvent) {
@@ -61,42 +68,47 @@ export function WorkspacePeople({
     }
   }
   return (
-    <section>
-      <form onSubmit={search} className="my-6 flex gap-3">
-        <input
-          aria-label="Search people"
+    <section className={embedded ? "" : undefined}>
+      <form onSubmit={search} className={`flex gap-3 ${embedded ? "mb-4" : "my-6"}`}>
+        <SearchField
+          className="min-w-0 flex-1"
+          label="Search people"
+          placeholder="Search by name"
           required
           minLength={2}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name"
-          className="min-w-0 flex-1 rounded-xl border bg-white px-4 py-3"
+          onChange={setQuery}
+          inputClassName="py-3 pl-10 pr-4"
         />
         <button
           disabled={busy}
-          className="rounded-xl bg-cyan-800 px-4 py-3 text-white"
+          aria-label="Search"
+          title="Search"
+          className="inline-flex items-center gap-2 rounded-xl bg-cyan-800 px-4 py-3 text-white disabled:opacity-50"
         >
-          {busy ? "Working…" : "Search"}
+          <Search className={iconSize} aria-hidden />
+          <span>{busy ? "Working…" : "Search"}</span>
         </button>
       </form>
-      <p role="status" className="text-sm text-slate-500">
+      <p role="status" className="text-sm text-aurora-muted">
         {message}
       </p>
       <div className="space-y-3">
         {rows.map((row) => (
           <article
             key={row.member_id}
-            className="flex items-center justify-between gap-3 rounded-2xl border bg-white p-5"
+            className="flex items-center justify-between gap-3 rounded-2xl border bg-aurora-surface p-5"
           >
             <div>
               <h2 className="font-semibold">{row.display_name}</h2>
-              <p className="mt-2 text-sm text-slate-500">{row.status}</p>
+              <p className="mt-2 text-sm text-aurora-muted">{row.status}</p>
             </div>
             <button
               disabled={busy || !row.member_id}
               onClick={() => void open(row.member_id)}
-              className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm disabled:opacity-50"
             >
+              <MessageCircle className={iconSize} aria-hidden />
               Chat
             </button>
           </article>

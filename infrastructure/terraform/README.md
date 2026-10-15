@@ -1,7 +1,11 @@
-# GlobalChat Terraform
+# Infrastructure layout
 
-The `bootstrap` configuration creates the dedicated, protected S3 bucket used for Terraform state. Its state remains local and must be retained securely because Terraform cannot use the bucket before it exists.
+GlobalChat **production compute** runs on a **Hostinger VPS** with Docker Compose (`deploy/hostinger/`).
 
-The `environments/production` configuration uses the remote S3 backend with native lockfiles. It creates the repository-restricted GitHub Actions OIDC provider and the foundation deployment role.
+**AWS** is limited to **private S3** for encrypted media:
 
-All resources use the `GlobalChat`, `production`, and `Terraform` ownership tags. Existing account resources are not imported or managed here.
+- `infrastructure/aws/s3-media/` — bucket policy, IAM for VPS, optional S3-only Terraform
+
+The former `environments/production` ECS/RDS/VPC Terraform stack has been removed from this repository. Historical state archives (if any) are operator-owned outside git.
+
+Local Postgres/Redis/RabbitMQ: `docker-compose.local.yml` and `scripts/local/dev.py`.

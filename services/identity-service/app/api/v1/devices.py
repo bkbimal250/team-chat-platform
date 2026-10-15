@@ -11,6 +11,7 @@ from app.models.models import Device, DeviceStatus, Session, SessionStatus
 from app.schemas.api import DeviceResponse, RevokeResponse
 from app.security.dependencies import Principal, current_principal
 from app.services.audit import audit_and_event
+from app.services.e2ee_service import E2eeService
 from app.services.session_service import SessionService
 
 router = APIRouter(prefix="/devices", tags=["devices"])
@@ -113,6 +114,7 @@ async def revoke_device(
                 request.client.host if request.client else "unknown",
                 "DEVICE_REVOKED",
             )
+        await E2eeService().purge_device(db, device.id)
         await audit_and_event(
             db,
             action="DEVICE_REVOKED",

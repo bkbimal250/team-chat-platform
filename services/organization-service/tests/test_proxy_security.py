@@ -1,8 +1,14 @@
+import os
+
 from django.http import HttpResponse
 from django.middleware.security import SecurityMiddleware
 from django.test import RequestFactory, override_settings
 
-from config.settings import production
+os.environ["ENVIRONMENT"] = "production"
+os.environ["JWT_PUBLIC_KEY"] = "test-production-jwt-public-key"
+os.environ["INTERNAL_SERVICE_TOKEN"] = "test-internal-service-token-32chars-min"
+
+from config.settings import production  # noqa: E402
 
 
 def test_production_proxy_header_keeps_public_https_requests_on_the_service():

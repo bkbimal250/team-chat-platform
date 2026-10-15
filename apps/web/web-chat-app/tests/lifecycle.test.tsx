@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { QRScanner } from "../features/devices/qr-scanner";
-import { Login } from "../features/auth/login";
+import { PhoneOTPLogin as Login } from "../features/auth/phone-otp-login";
 import { identityApi, ApiError } from "../lib/api/client";
 it("scanner cancel stops camera and unmount clears video", async () => {
  const stop = vi.fn(); const media = { getTracks: () => [{ stop }] } as unknown as MediaStream;

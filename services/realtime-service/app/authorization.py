@@ -19,7 +19,10 @@ class ConversationAuthorizer:
                     f"{configured.conversation_service_url.rstrip('/')}/internal/v1/conversations/{conversation_id}/authorize",
                     headers={"X-Internal-Service-Token": configured.internal_service_token},
                     json={
-                        "organization_id": str(principal.organization_id),
+                        "organization_id": str(principal.organization_id)
+                        if principal.organization_id
+                        else None,
+                        "identity_id": str(principal.identity_id),
                         "member_id": str(principal.member_id),
                     },
                 )
@@ -27,7 +30,8 @@ class ConversationAuthorizer:
             data = response.json()
             if (
                 data.get("allowed") is True
-                and data.get("organization_id") == str(principal.organization_id)
+                and data.get("organization_id")
+                == (str(principal.organization_id) if principal.organization_id else None)
                 and data.get("member_id") == str(principal.member_id)
                 and data.get("conversation_id") == str(conversation_id)
             ):

@@ -1,6 +1,8 @@
 Last verified: 2026-10-04. Scope: existing GlobalChat local development only.
 
 # WebSocket testing
+
+Use [the complete Realtime reference](../services/REALTIME-API.md) and [ordered WebSocket checklist](../manual-testing/12-REALTIME-WEBSOCKET.md). Additional client frames are `{"version":1,"type":"ping"}` and `{"version":1,"type":"unsubscribe","conversation_id":"<ID>"}`. Verify pong/unsubscribe responses against `client_event` in source. Runtime shutdown closes sockets with 1012; reconnect with a valid session and resubscribe. Logout/session changes must close the old socket. Never place query tokens in shared screenshots or logs.
 URL ws://localhost:8007/api/v1/realtime?token=<ACCESS_TOKEN>. Tokens must remain private. Client frame examples:
 ```json
 {"version":1,"type":"subscribe","conversation_id":"<ID>"}

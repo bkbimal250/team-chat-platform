@@ -28,7 +28,7 @@ class MediaStatus(str, enum.Enum):
 class Media(Base):
     __tablename__ = "media"
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
     conversation_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
     uploader_user_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
     uploader_member_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
@@ -62,7 +62,7 @@ class OutboxEvent(Base):
     __tablename__ = "outbox_events"
     id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     event_type: Mapped[str] = mapped_column(String(128))
-    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    organization_id: Mapped[object | None] = mapped_column(UUID(as_uuid=True), index=True)
     aggregate_id: Mapped[object] = mapped_column(UUID(as_uuid=True))
     payload: Mapped[str] = mapped_column(String)
     correlation_id: Mapped[str] = mapped_column(String(128))
@@ -84,7 +84,18 @@ class MediaReference(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     media_id: Mapped[object] = mapped_column(UUID(as_uuid=True), ForeignKey("media.id"), index=True)
     message_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    conversation_id: Mapped[object | None] = mapped_column(
+        UUID(as_uuid=True), index=True, nullable=True
+    )
     active: Mapped[bool] = mapped_column(default=True)
+
+
+class RevokedOrgMember(Base):
+    __tablename__ = "revoked_org_members"
+    organization_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    member_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    status: Mapped[str] = mapped_column(String(32))
+    revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
 class OrganizationStorageUsage(Base):
@@ -94,3 +105,22 @@ class OrganizationStorageUsage(Base):
     media_count: Mapped[int] = mapped_column(Integer, default=0)
     reserved_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class PersonalStorageUsage(Base):
+    __tablename__ = "personal_storage_usage"
+    identity_id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    stored_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    media_count: Mapped[int] = mapped_column(Integer, default=0)
+    reserved_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class ProfilePhoto(Base):
+    __tablename__ = "profile_photos"
+    id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    owner_identity_id: Mapped[object] = mapped_column(UUID(as_uuid=True), index=True)
+    object_key: Mapped[str] = mapped_column(String(512), unique=True)
+    mime_type: Mapped[str] = mapped_column(String(32))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    ready: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

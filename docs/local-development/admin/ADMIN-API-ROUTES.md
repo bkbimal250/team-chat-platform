@@ -1135,3 +1135,8 @@ Newest-first cursor ordering is fixed; backend does not enable OrderingFilter. R
 ## Company owner onboarding
 
 See [company registration](../onboarding/COMPANY-REGISTRATION.md), [actual contracts](../onboarding/COMPANY-REGISTRATION-API.md) and [manual/automated sequence](../onboarding/COMPANY-REGISTRATION-TESTING.md). Public Gateway endpoints are POST `/api/v1/auth/registration/company/start`, `/verify`, `/resend` under that prefix. Company signup verifies phone OTP, then creates a NEW organization and real Owner membership; member invite-only policy remains intact. Registration -> OTP -> verify -> profile/current organization -> admin -> logout -> normal LOGIN OTP restores the same membership. No production deployment or real SMS was performed.
+
+
+## Secure employee onboarding (2026-10-05)
+
+Admin now uses the actual recipient-bound invitation create/list/resend/revoke contracts and prefetched member roles/branches/teams/masked phone. See ../onboarding/MEMBER-INVITATION-API.md for method/body/permission/error examples.

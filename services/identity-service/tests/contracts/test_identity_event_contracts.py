@@ -7,10 +7,10 @@ import pytest
 @pytest.mark.parametrize(
     "event_type",
     [
-        "member.activated.v1",
-        "member.suspended.v1",
-        "member.removed.v1",
-        "member.role_changed.v1",
+        "member.activated.v2",
+        "member.suspended.v2",
+        "member.removed.v2",
+        "member.role_changed.v2",
         "organization.suspended.v1",
         "identity.created.v1",
         "device.registered.v1",

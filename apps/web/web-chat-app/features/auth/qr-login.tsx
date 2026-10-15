@@ -95,7 +95,7 @@ export function QRLogin({
   return (
     <section className="space-y-5 text-center">
       <h2 className="text-2xl font-semibold">Link with QR code</h2>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-aurora-muted">
         Scan this code from GlobalChat on your existing device, then approve the
         link.
       </p>
@@ -108,7 +108,7 @@ export function QRLogin({
         {status}
       </p>
       {ready && (
-        <p className="text-xs text-slate-500">Expires in {remaining}s</p>
+        <p className="text-xs text-aurora-muted">Expires in {remaining}s</p>
       )}
       <div className="flex justify-center gap-4">
         <button
@@ -120,7 +120,7 @@ export function QRLogin({
         >
           Refresh QR
         </button>
-        <button onClick={onCancel} className="text-slate-500">
+        <button onClick={onCancel} className="text-aurora-muted">
           Cancel
         </button>
       </div>

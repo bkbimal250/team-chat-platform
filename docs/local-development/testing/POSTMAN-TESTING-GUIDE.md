@@ -1,261 +1,170 @@
+# Primary authentication folders
+
+Use `01 - Company Registration` for email/password registration and `02 - Authentication` for login, refresh, logout and invitation password setup. `Phone OTP - Future / Disabled` and preserved phone onboarding folders require explicit feature enablement and must not be run in the current no-SMS flow. Keep password/token variables blank in exported environments.
+
 # Postman testing guide
 
-Last verified: 2026-10-04. Source: running local OpenAPI schemas.
-
-Import the collection/environment under `../postman/`. Examples are schema-derived templates, not working credentials. Replace placeholders and check required fields in the request schema. PARTIAL means schema/import verified, not that every mutation was executed.
-
-**YOU DO THIS MANUALLY:** request a development OTP for an explicitly seeded phone, copy `development_code` privately into verify request, then use the returned access token. Do not share the environment after tokens are captured.
-
-| Service | Method | Route | Auth | Purpose | Call through | Status |
-
-|---|---|---|---|---|---|---|
-
-| organization | GET | `/api/schema/` | access token | schema_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/audit-logs/` | access token | v1_audit_logs_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/audit-logs/{id}/` | access token | v1_audit_logs_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/branches/` | access token | v1_branches_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/branches/` | access token | v1_branches_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/branches/{id}/` | access token | v1_branches_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | PATCH | `/api/v1/branches/{id}/` | access token | v1_branches_partial_update | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/branches/{id}/lifecycle/` | access token | v1_branches_lifecycle_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/branches/{id}/members/` | access token | v1_branches_members_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/branches/{id}/members/` | access token | v1_branches_members_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/branches/{id}/members/{membership_id}/leave/` | access token | v1_branches_members_leave_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/branches/{id}/members/{membership_id}/primary/` | access token | v1_branches_members_primary_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/invitations/` | access token | v1_invitations_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/invitations/` | access token | v1_invitations_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/invitations/{id}/` | access token | v1_invitations_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/invitations/{id}/accept/` | access token | v1_invitations_accept_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/invitations/{id}/revoke/` | access token | v1_invitations_revoke_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/members/` | access token | v1_members_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/members/` | access token | v1_members_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/members/{id}/` | access token | v1_members_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | PATCH | `/api/v1/members/{id}/` | access token | v1_members_partial_update | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/members/{id}/lifecycle/` | access token | v1_members_lifecycle_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/members/{id}/roles/` | access token | v1_members_roles_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/organizations/current/` | access token | v1_organizations_current_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | PATCH | `/api/v1/organizations/current/` | access token | v1_organizations_current_partial_update | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/organizations/current/lifecycle/` | access token | v1_organizations_current_lifecycle_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/organizations/current/settings/` | access token | v1_organizations_current_settings_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | PATCH | `/api/v1/organizations/current/settings/` | access token | v1_organizations_current_settings_partial_update | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/permissions/` | access token | v1_permissions_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/role-assignments/` | access token | v1_role_assignments_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/roles/` | access token | v1_roles_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/roles/` | access token | v1_roles_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/roles/{id}/` | access token | v1_roles_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/teams/` | access token | v1_teams_list | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/teams/` | access token | v1_teams_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/teams/{id}/` | access token | v1_teams_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | PATCH | `/api/v1/teams/{id}/` | access token | v1_teams_partial_update | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/teams/{id}/lifecycle/` | access token | v1_teams_lifecycle_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | GET | `/api/v1/teams/{id}/members/` | access token | v1_teams_members_retrieve | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/teams/{id}/members/` | access token | v1_teams_members_create | THROUGH GATEWAY | PARTIAL |
-
-| organization | POST | `/api/v1/teams/{id}/members/{membership_id}/leave/` | access token | v1_teams_members_leave_create | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| identity | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| identity | POST | `/api/v1/auth/otp/request` | none | Otp Request | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/otp/verify` | none | Otp Verify | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/refresh` | none | Refresh | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/logout` | access token | Logout | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/logout-all` | access token | Logout All | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/context` | access token | Switch Context | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/api/v1/auth/me` | access token | Me | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/qr/challenges` | none | Qr Create | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/api/v1/auth/qr/challenges/{challenge_id}/status` | none | Qr Status | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/qr/challenges/{challenge_id}/authorize` | access token | Qr Authorize | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/qr/challenges/{challenge_id}/consume` | none | Qr Consume | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/api/v1/devices` | access token | Devices | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/api/v1/devices/{device_id}` | access token | Device | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/devices/{device_id}/revoke` | access token | Revoke Device | THROUGH GATEWAY | PARTIAL |
-
-| identity | GET | `/api/v1/auth/sessions` | access token | Sessions | THROUGH GATEWAY | PARTIAL |
-
-| identity | POST | `/api/v1/auth/sessions/{session_id}/revoke` | access token | Revoke | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| user | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| user | POST | `/internal/v1/users/block-check` | service token | Block Check | DIRECT SERVICE | PARTIAL |
-
-| user | POST | `/internal/v1/users/projections` | service token | Projections | DIRECT SERVICE | PARTIAL |
-
-| user | GET | `/api/v1/users/me` | access token | Me | THROUGH GATEWAY | PARTIAL |
-
-| user | PATCH | `/api/v1/users/me` | access token | Update Me | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/api/v1/users/me/preferences` | access token | Preferences | THROUGH GATEWAY | PARTIAL |
-
-| user | PATCH | `/api/v1/users/me/preferences` | access token | Update Preferences | THROUGH GATEWAY | PARTIAL |
-
-| user | POST | `/api/v1/users/{user_id}/block` | access token | Block | THROUGH GATEWAY | PARTIAL |
-
-| user | DELETE | `/api/v1/users/{user_id}/block` | access token | Unblock | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/api/v1/users/me/privacy` | access token | Privacy | THROUGH GATEWAY | PARTIAL |
-
-| user | PATCH | `/api/v1/users/me/privacy` | access token | Update Privacy | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/api/v1/users/me/blocked` | access token | Blocked Users | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/api/v1/users/search` | access token | Search Users | THROUGH GATEWAY | PARTIAL |
-
-| user | GET | `/api/v1/users/{user_id}` | access token | Get Profile | THROUGH GATEWAY | PARTIAL |
-
-| conversation | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| conversation | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/direct` | access token | Direct | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/groups` | access token | Group | THROUGH GATEWAY | PARTIAL |
-
-| conversation | GET | `/api/v1/conversations` | access token | List Conversations | THROUGH GATEWAY | PARTIAL |
-
-| conversation | GET | `/api/v1/conversations/{cid}` | access token | Get | THROUGH GATEWAY | PARTIAL |
-
-| conversation | PATCH | `/api/v1/conversations/{cid}` | access token | Update | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/members` | access token | Add | THROUGH GATEWAY | PARTIAL |
-
-| conversation | GET | `/api/v1/conversations/{cid}/members` | access token | Members | THROUGH GATEWAY | PARTIAL |
-
-| conversation | DELETE | `/api/v1/conversations/{cid}/members/{mid}` | access token | Remove | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/leave` | access token | Leave | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/close` | access token | Close | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/members/{mid}/promote` | access token | Promote | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/members/{mid}/demote` | access token | Demote | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/api/v1/conversations/{cid}/transfer-ownership` | access token | Transfer | THROUGH GATEWAY | PARTIAL |
-
-| conversation | PATCH | `/api/v1/conversations/{cid}/state` | access token | State | THROUGH GATEWAY | PARTIAL |
-
-| conversation | POST | `/internal/v1/conversations/{cid}/authorize` | service token | Authorize Send | DIRECT SERVICE | PARTIAL |
-
-| messaging | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| messaging | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| messaging | POST | `/api/v1/conversations/{conversation_id}/messages` | access token | Create | THROUGH GATEWAY | PARTIAL |
-
-| messaging | GET | `/api/v1/conversations/{conversation_id}/messages` | access token | History | THROUGH GATEWAY | PARTIAL |
-
-| messaging | PATCH | `/api/v1/messages/{message_id}` | access token | Edit | THROUGH GATEWAY | PARTIAL |
-
-| messaging | DELETE | `/api/v1/messages/{message_id}` | access token | Delete | THROUGH GATEWAY | PARTIAL |
-
-| messaging | POST | `/api/v1/messages/{message_id}/reactions` | access token | Add Reaction | THROUGH GATEWAY | PARTIAL |
-
-| messaging | DELETE | `/api/v1/messages/{message_id}/reactions/{reaction}` | access token | Remove Reaction | THROUGH GATEWAY | PARTIAL |
-
-| messaging | POST | `/api/v1/conversations/{conversation_id}/delivered` | access token | Delivered | THROUGH GATEWAY | PARTIAL |
-
-| messaging | POST | `/api/v1/conversations/{conversation_id}/read` | access token | Read | THROUGH GATEWAY | PARTIAL |
-
-| media | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| media | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| media | POST | `/api/v1/media/uploads` | access token | Initiate Upload | THROUGH GATEWAY | PARTIAL |
-
-| media | POST | `/api/v1/media/multipart` | access token | Initiate Multipart | THROUGH GATEWAY | PARTIAL |
-
-| media | POST | `/api/v1/media/{media_id}/multipart/parts` | access token | Multipart Parts | THROUGH GATEWAY | PARTIAL |
-
-| media | GET | `/api/v1/media/{media_id}/multipart` | access token | Multipart Resume | THROUGH GATEWAY | PARTIAL |
-
-| media | DELETE | `/api/v1/media/{media_id}/multipart` | access token | Abort Multipart | THROUGH GATEWAY | PARTIAL |
-
-| media | POST | `/api/v1/media/{media_id}/multipart/complete` | access token | Complete Multipart | THROUGH GATEWAY | PARTIAL |
-
-| media | POST | `/api/v1/media/{media_id}/complete` | access token | Complete Upload | THROUGH GATEWAY | PARTIAL |
-
-| media | GET | `/api/v1/media/{media_id}/download` | access token | Download | THROUGH GATEWAY | PARTIAL |
-
-| media | DELETE | `/api/v1/media/{media_id}` | access token | Delete | THROUGH GATEWAY | PARTIAL |
-
-| notification | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| notification | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-
-| notification | PUT | `/api/v1/notifications/devices/current/token` | access token | Put Token | THROUGH GATEWAY | PARTIAL |
-
-| notification | DELETE | `/api/v1/notifications/devices/current/token` | access token | Delete Token | THROUGH GATEWAY | PARTIAL |
-
-| notification | GET | `/api/v1/notifications/preferences` | access token | Get Preferences | THROUGH GATEWAY | PARTIAL |
-
-| notification | PATCH | `/api/v1/notifications/preferences` | access token | Patch Preferences | THROUGH GATEWAY | PARTIAL |
-
-| notification | GET | `/api/v1/notifications` | access token | List Notifications | THROUGH GATEWAY | PARTIAL |
-
-| realtime | GET | `/health/live` | none | Live | DIRECT SERVICE | PARTIAL |
-
-| realtime | GET | `/health/ready` | none | Ready | DIRECT SERVICE | PARTIAL |
-## Organization administration
-
-See [admin route/permission matrix](../admin/ADMIN-API-ROUTES.md) and [admin manual checks](../admin/ADMIN-MANUAL-TESTING.md). Use current tenant/member role assignments, not fabricated platform-admin capabilities. Own devices/notifications are not cross-user admin APIs.
-
-
-## Company owner onboarding
-
-See [company registration](../onboarding/COMPANY-REGISTRATION.md), [actual contracts](../onboarding/COMPANY-REGISTRATION-API.md) and [manual/automated sequence](../onboarding/COMPANY-REGISTRATION-TESTING.md). Public Gateway endpoints are POST `/api/v1/auth/registration/company/start`, `/verify`, `/resend` under that prefix. Company signup verifies phone OTP, then creates a NEW organization and real Owner membership; member invite-only policy remains intact. Registration -> OTP -> verify -> profile/current organization -> admin -> logout -> normal LOGIN OTP restores the same membership. No production deployment or real SMS was performed.
+Source verified: 2026-10-05. Import the collection and environment from `../postman/`. Follow [the fourteen ordered chapters](../manual-testing/README.md), using [service references](../services/README.md) for exact body constraints, responses, permissions and errors. Schema templates contain placeholders; replace them with actual local fixture IDs. Do not run the whole collection automatically: it contains OTP, revocation and destructive requests.
+
+Public business requests use Gateway port 8008. Health/schema, internal operator and signed-storage requests use their actual direct service or returned capability URL. Internal routes are not browser endpoints. WebSocket frames require a separate Postman WebSocket tab. Gateway forwarding is a routing contract, not an additional business endpoint.
+
+Keep Owner and Employee environments separate. Token, OTP and challenge variables are private: never export populated environments. Inspect active OTP_PROVIDER before requesting a code. Development mode alone does not prove that SMS is disabled. Retain rate limits and honor retry_after; never repeat OTP requests automatically.
+
+The existing Company registration and MEMBER INVITATION folders are preserved. Their specialized guides live under `../onboarding/`; admin permissions are documented under `../admin/`.
+
+## Complete operation inventory
+
+| Service | Method | Actual path | Authentication |
+|---|---|---|---|
+| organization | GET | `/api/v1/audit-logs/` | Bearer access token |
+| organization | GET | `/api/v1/audit-logs/{id}/` | Bearer access token |
+| organization | GET | `/api/v1/branches/` | Bearer access token |
+| organization | POST | `/api/v1/branches/` | Bearer access token |
+| organization | GET | `/api/v1/branches/{id}/` | Bearer access token |
+| organization | PATCH | `/api/v1/branches/{id}/` | Bearer access token |
+| organization | POST | `/api/v1/branches/{id}/lifecycle/` | Bearer access token |
+| organization | GET | `/api/v1/branches/{id}/members/` | Bearer access token |
+| organization | POST | `/api/v1/branches/{id}/members/` | Bearer access token |
+| organization | POST | `/api/v1/branches/{id}/members/{membership_id}/leave/` | Bearer access token |
+| organization | POST | `/api/v1/branches/{id}/members/{membership_id}/primary/` | Bearer access token |
+| organization | GET | `/api/v1/invitations/` | Bearer access token |
+| organization | POST | `/api/v1/invitations/` | Bearer access token |
+| organization | GET | `/api/v1/invitations/{id}/` | Bearer access token |
+| organization | POST | `/api/v1/invitations/{id}/accept/` | Bearer access token |
+| organization | POST | `/api/v1/invitations/{id}/resend/` | Bearer access token |
+| organization | POST | `/api/v1/invitations/{id}/revoke/` | Bearer access token |
+| organization | GET | `/api/v1/members/` | Bearer access token |
+| organization | POST | `/api/v1/members/` | Bearer access token |
+| organization | GET | `/api/v1/members/{id}/` | Bearer access token |
+| organization | PATCH | `/api/v1/members/{id}/` | Bearer access token |
+| organization | POST | `/api/v1/members/{id}/lifecycle/` | Bearer access token |
+| organization | POST | `/api/v1/members/{id}/roles/` | Bearer access token |
+| organization | GET | `/api/v1/organizations/current/` | Bearer access token |
+| organization | PATCH | `/api/v1/organizations/current/` | Bearer access token |
+| organization | POST | `/api/v1/organizations/current/lifecycle/` | Bearer access token |
+| organization | GET | `/api/v1/organizations/current/settings/` | Bearer access token |
+| organization | PATCH | `/api/v1/organizations/current/settings/` | Bearer access token |
+| organization | GET | `/api/v1/permissions/` | Bearer access token |
+| organization | GET | `/api/v1/role-assignments/` | Bearer access token |
+| organization | GET | `/api/v1/roles/` | Bearer access token |
+| organization | POST | `/api/v1/roles/` | Bearer access token |
+| organization | GET | `/api/v1/roles/{id}/` | Bearer access token |
+| organization | GET | `/api/v1/teams/` | Bearer access token |
+| organization | POST | `/api/v1/teams/` | Bearer access token |
+| organization | GET | `/api/v1/teams/{id}/` | Bearer access token |
+| organization | PATCH | `/api/v1/teams/{id}/` | Bearer access token |
+| organization | POST | `/api/v1/teams/{id}/lifecycle/` | Bearer access token |
+| organization | GET | `/api/v1/teams/{id}/members/` | Bearer access token |
+| organization | POST | `/api/v1/teams/{id}/members/` | Bearer access token |
+| organization | POST | `/api/v1/teams/{id}/members/{membership_id}/leave/` | Bearer access token |
+| organization | GET | `/health/live` | None at this layer |
+| organization | GET | `/health/ready` | None at this layer |
+| organization | POST | `/api/internal/v1/company-registration/` | Internal service token |
+| organization | GET | `/api/internal/v1/identity-memberships/{identity_id}/` | Internal service token |
+| organization | POST | `/api/internal/v1/invitations/validate/` | Internal service token |
+| organization | POST | `/api/internal/v1/invitations/accept/` | Internal service token |
+| organization | POST | `/api/internal/v1/invitations/accept-email/` | Internal service token |
+| organization | POST | `/api/internal/v1/invitations/resume/` | Internal service token |
+| identity | GET | `/health/live` | None at this layer |
+| identity | GET | `/health/ready` | None at this layer |
+| identity | POST | `/api/v1/auth/otp/request` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/otp/verify` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/refresh` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/logout` | Bearer access token |
+| identity | POST | `/api/v1/auth/logout-all` | Bearer access token |
+| identity | POST | `/api/v1/auth/context` | Bearer access token |
+| identity | GET | `/api/v1/auth/me` | Bearer access token |
+| identity | POST | `/api/v1/auth/qr/challenges` | No bearer; challenge/refresh proof where required |
+| identity | GET | `/api/v1/auth/qr/challenges/{challenge_id}/status` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/qr/challenges/{challenge_id}/authorize` | Bearer access token |
+| identity | POST | `/api/v1/auth/qr/challenges/{challenge_id}/consume` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/login` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/registration/company` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/invitations/password` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/registration/company/start` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/registration/company/resend` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/registration/company/verify` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/invitations/validate` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/invitations/resend` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/invitations/request` | No bearer; challenge/refresh proof where required |
+| identity | POST | `/api/v1/auth/invitations/verify` | No bearer; challenge/refresh proof where required |
+| identity | GET | `/api/v1/devices` | Bearer access token |
+| identity | GET | `/api/v1/devices/{device_id}` | Bearer access token |
+| identity | POST | `/api/v1/devices/{device_id}/revoke` | Bearer access token |
+| identity | GET | `/api/v1/auth/sessions` | Bearer access token |
+| identity | POST | `/api/v1/auth/sessions/{session_id}/revoke` | Bearer access token |
+| user | GET | `/health/live` | None at this layer |
+| user | GET | `/health/ready` | None at this layer |
+| user | POST | `/internal/v1/users/block-check` | Internal service token |
+| user | POST | `/internal/v1/users/projections` | Internal service token |
+| user | GET | `/api/v1/users/me` | Bearer access token |
+| user | PATCH | `/api/v1/users/me` | Bearer access token |
+| user | GET | `/api/v1/users/me/preferences` | Bearer access token |
+| user | PATCH | `/api/v1/users/me/preferences` | Bearer access token |
+| user | POST | `/api/v1/users/{user_id}/block` | Bearer access token |
+| user | DELETE | `/api/v1/users/{user_id}/block` | Bearer access token |
+| user | GET | `/api/v1/users/me/privacy` | Bearer access token |
+| user | PATCH | `/api/v1/users/me/privacy` | Bearer access token |
+| user | GET | `/api/v1/users/me/blocked` | Bearer access token |
+| user | GET | `/api/v1/users/search` | Bearer access token |
+| user | GET | `/api/v1/users/{user_id}` | Bearer access token |
+| user | POST | `/internal/v1/users/company-owner` | Internal service token |
+| user | POST | `/internal/v1/users/provision` | Internal service token |
+| conversation | GET | `/health/live` | None at this layer |
+| conversation | GET | `/health/ready` | None at this layer |
+| conversation | POST | `/api/v1/conversations/direct` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/groups` | Bearer access token |
+| conversation | GET | `/api/v1/conversations` | Bearer access token |
+| conversation | GET | `/api/v1/conversations/{cid}` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/members` | Bearer access token |
+| conversation | DELETE | `/api/v1/conversations/{cid}/members/{mid}` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/leave` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/close` | Bearer access token |
+| conversation | GET | `/api/v1/conversations/{cid}/members` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/members/{mid}/promote` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/members/{mid}/demote` | Bearer access token |
+| conversation | POST | `/api/v1/conversations/{cid}/transfer-ownership` | Bearer access token |
+| conversation | PATCH | `/api/v1/conversations/{cid}` | Bearer access token |
+| conversation | PATCH | `/api/v1/conversations/{cid}/state` | Bearer access token |
+| conversation | POST | `/internal/v1/conversations/{cid}/authorize` | Internal service token |
+| messaging | GET | `/health/live` | None at this layer |
+| messaging | GET | `/health/ready` | None at this layer |
+| messaging | POST | `/api/v1/conversations/{conversation_id}/messages` | Bearer access token |
+| messaging | GET | `/api/v1/conversations/{conversation_id}/messages` | Bearer access token |
+| messaging | PATCH | `/api/v1/messages/{message_id}` | Bearer access token |
+| messaging | DELETE | `/api/v1/messages/{message_id}` | Bearer access token |
+| messaging | POST | `/api/v1/messages/{message_id}/reactions` | Bearer access token |
+| messaging | DELETE | `/api/v1/messages/{message_id}/reactions/{reaction}` | Bearer access token |
+| messaging | POST | `/api/v1/conversations/{conversation_id}/delivered` | Bearer access token |
+| messaging | POST | `/api/v1/conversations/{conversation_id}/read` | Bearer access token |
+| media | PUT | `/local-storage/{token}` | Signed capability in URL |
+| media | GET | `/local-storage/{token}` | Signed capability in URL |
+| media | GET | `/health/live` | None at this layer |
+| media | GET | `/health/ready` | None at this layer |
+| media | POST | `/api/v1/media/uploads` | Bearer access token |
+| media | POST | `/api/v1/media/multipart` | Bearer access token |
+| media | POST | `/api/v1/media/{media_id}/multipart/parts` | Bearer access token |
+| media | GET | `/api/v1/media/{media_id}/multipart` | Bearer access token |
+| media | POST | `/api/v1/media/{media_id}/multipart/complete` | Bearer access token |
+| media | DELETE | `/api/v1/media/{media_id}/multipart` | Bearer access token |
+| media | POST | `/api/v1/media/{media_id}/complete` | Bearer access token |
+| media | GET | `/api/v1/media/{media_id}/download` | Bearer access token |
+| media | DELETE | `/api/v1/media/{media_id}` | Bearer access token |
+| notification | GET | `/health/live` | None at this layer |
+| notification | GET | `/health/ready` | None at this layer |
+| notification | PUT | `/api/v1/notifications/devices/current/token` | Bearer access token |
+| notification | DELETE | `/api/v1/notifications/devices/current/token` | Bearer access token |
+| notification | GET | `/api/v1/notifications/preferences` | Bearer access token |
+| notification | PATCH | `/api/v1/notifications/preferences` | Bearer access token |
+| notification | GET | `/api/v1/notifications` | Bearer access token |
+| realtime | GET | `/health/live` | None at this layer |
+| realtime | GET | `/health/ready` | None at this layer |
+| realtime | WEBSOCKET | `/api/v1/realtime` | Access token in query; conversation authorization |
+| gateway | GET | `/health/live` | None at this layer |
+| gateway | GET | `/health/ready` | None at this layer |
+| gateway | DELETE | `/{path:path}` | None at this layer |
+| gateway | GET | `/{path:path}` | None at this layer |
+| gateway | HEAD | `/{path:path}` | None at this layer |
+| gateway | PATCH | `/{path:path}` | None at this layer |
+| gateway | POST | `/{path:path}` | None at this layer |
+| gateway | PUT | `/{path:path}` | None at this layer |

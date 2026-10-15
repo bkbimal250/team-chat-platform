@@ -29,7 +29,7 @@ class RabbitPublisher:
             "event_version": 1,
             "occurred_at": event.created_at.isoformat(),
             "producer": "conversation-service",
-            "organization_id": str(event.organization_id),
+            "organization_id": str(event.organization_id) if event.organization_id else None,
             "aggregate_id": str(event.aggregate_id),
             "correlation_id": event.correlation_id,
             "payload": event.payload,

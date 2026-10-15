@@ -18,18 +18,22 @@ def json_for_test(_, __, **kwargs):
 
 
 @pytest.mark.asyncio
-async def test_durable_summary_read_dedupe_tenant_and_out_of_order(tmp_path):
+@pytest.mark.parametrize("personal", [False, True])
+async def test_durable_summary_read_dedupe_tenant_and_out_of_order(tmp_path, personal):
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'summary.db'}")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     org, other_org, cid, member, sender = [uuid.uuid4() for _ in range(5)]
+    if personal:
+        org = None
     async with sessions.begin() as db:
         db.add(
             Conversation(
                 id=cid,
                 organization_id=org,
-                type="GROUP",
+                type="DIRECT" if personal else "GROUP",
+                direct_key=str(cid) if personal else None,
                 created_by_member_id=member,
                 status="ACTIVE",
             )
@@ -39,11 +43,11 @@ async def test_durable_summary_read_dedupe_tenant_and_out_of_order(tmp_path):
     event = dict(
         event_id=str(uuid.uuid4()),
         producer="messaging",
-        organization_id=str(org),
+        organization_id=str(org) if org else None,
         event_type="message.created.v1",
         occurred_at=timestamp,
         payload=dict(
-            organization_id=str(org),
+            organization_id=str(org) if org else None,
             conversation_id=str(cid),
             message_id=str(message_id),
             sender_member_id=str(sender),

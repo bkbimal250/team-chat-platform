@@ -8,6 +8,8 @@ import {
   uploadAttachment,
   validateAttachment,
 } from "./api";
+import { Paperclip } from "lucide-react";
+import { IconButton, iconSize } from "@/components/ui/icon-button";
 import { VoiceRecorder } from "./voice-recorder";
 export function AttachmentComposer({
   conversationId,
@@ -124,14 +126,14 @@ export function AttachmentComposer({
             event.target.value = "";
           }}
         />
-        <button
-          type="button"
+        <IconButton
+          label="Attach"
           disabled={busy || recording}
           onClick={() => input.current?.click()}
-          className="rounded-lg px-3 py-2 text-sm text-cyan-800"
+          className="text-cyan-800"
         >
-          Attach file
-        </button>
+          <Paperclip className={iconSize} />
+        </IconButton>
         <VoiceRecorder onBusyChange={setRecording}
           disabled={busy || !!file}
           onRecorded={(recording) => select([recording], true)}
@@ -140,7 +142,7 @@ export function AttachmentComposer({
       {file && (
         <section
           aria-label="Attachment preview"
-          className="rounded-xl border border-slate-200 p-3"
+          className="rounded-xl border border-aurora-border p-3"
         >
           {preview &&
             (file.type.startsWith("image/") ? (

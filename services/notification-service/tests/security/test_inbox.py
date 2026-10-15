@@ -13,9 +13,11 @@ async def test_inbox_scopes_tenant_user_and_member_and_excludes_credentials():
         id=uuid4(),
         conversation_id=uuid4(),
         message_id=uuid4(),
+        notification_type="MESSAGE",
         title="Title",
         body="Body",
         preview_mode="FULL",
+        read_at=None,
     )
 
     class Session:
@@ -33,7 +35,9 @@ async def test_inbox_scopes_tenant_user_and_member_and_excludes_credentials():
         "id",
         "conversation_id",
         "message_id",
+        "notification_type",
         "title",
         "body",
         "preview_mode",
+        "read_at",
     }

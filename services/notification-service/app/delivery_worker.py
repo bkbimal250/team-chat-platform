@@ -79,6 +79,19 @@ class DeliveryWorker:
             )
             return
         try:
+            data = {
+                "notification_id": str(context.notification.id),
+                "notification_type": context.notification.notification_type,
+                "scope": "personal"
+                if context.notification.organization_id is None
+                else "company",
+            }
+            if context.notification.conversation_id:
+                data["conversation_id"] = str(context.notification.conversation_id)
+            if context.notification.message_id:
+                data["message_id"] = str(context.notification.message_id)
+            if context.notification.organization_id:
+                data["organization_id"] = str(context.notification.organization_id)
             result = await self.providers.send(
                 context.delivery.provider,
                 context.token,
@@ -87,10 +100,7 @@ class DeliveryWorker:
                         "title": context.notification.title or "",
                         "body": context.notification.body or "",
                     },
-                    "data": {
-                        "notification_id": str(context.notification.id),
-                        "conversation_id": str(context.notification.conversation_id),
-                    },
+                    "data": data,
                 },
             )
         except Exception as exc:  # Provider boundaries must never strand SENDING deliveries.

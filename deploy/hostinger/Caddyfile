@@ -1,0 +1,11 @@
+# Replace domains via environment variables in docker-compose (Caddy expands {$VAR}).
+
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy gateway-service:8008
+}
+
+{$WS_DOMAIN} {
+	encode gzip
+	reverse_proxy realtime-api:8007
+}

@@ -29,12 +29,12 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-lg space-y-4 p-12">
         <h1 className="text-2xl font-semibold">
           {auth.status === "denied"
-            ? "Organization admin access required"
+            ? "Platform administration unavailable"
             : "Session validation unavailable"}
         </h1>
         <p role="alert">
           {auth.error ||
-            "Your current membership has no administration permissions. Contact your organization owner."}
+            "This account has no active GlobalChat platform grant. Company ownership does not grant platform access."}
         </p>
         {logoutError && <p role="alert">{logoutError}</p>}
         <Button onClick={() => void auth.reload()}>Retry</Button>

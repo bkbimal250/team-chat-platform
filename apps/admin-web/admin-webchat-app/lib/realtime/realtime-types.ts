@@ -1,4 +1,5 @@
 export type RealtimeState =
+  | "offline"
   | "connecting"
   | "connected"
   | "reconnecting"

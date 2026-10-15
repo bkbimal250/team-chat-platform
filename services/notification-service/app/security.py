@@ -9,7 +9,7 @@ from app.config import get_settings
 
 @dataclass(frozen=True)
 class Principal:
-    organization_id: UUID
+    organization_id: UUID | None
     user_id: UUID
     member_id: UUID
     device_id: UUID
@@ -29,12 +29,16 @@ async def get_principal(authorization: str | None = Header(default=None)) -> Pri
             algorithms=[settings.jwt_algorithm],
             issuer=settings.jwt_issuer,
             audience=settings.jwt_audience,
-            options={"require": ["sub", "mid", "did", "org", "exp"]},
+            options={"require": ["sub", "did", "exp"]},
         )
+        if ("org" in claims) != ("mid" in claims):
+            raise ValueError("Incomplete tenant context")
+        organization_id = UUID(claims["org"]) if "org" in claims else None
+        member_id = UUID(claims["mid"]) if "mid" in claims else UUID(claims["sub"])
         return Principal(
-            organization_id=UUID(claims["org"]),
+            organization_id=organization_id,
             user_id=UUID(claims["sub"]),
-            member_id=UUID(claims["mid"]),
+            member_id=member_id,
             device_id=UUID(claims["did"]),
         )
     except (jwt.PyJWTError, KeyError, ValueError) as exc:

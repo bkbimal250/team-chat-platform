@@ -9,7 +9,7 @@ from app.config import get_settings
 
 @dataclass(frozen=True)
 class Principal:
-    organization_id: UUID
+    organization_id: UUID | None
     user_id: UUID
     member_id: UUID
     device_id: UUID
@@ -31,21 +31,33 @@ async def get_principal(authorization: str | None = Header(default=None)) -> Pri
             algorithms=[settings.jwt_algorithm],
             issuer=settings.jwt_issuer,
             audience=settings.jwt_audience,
-            options={"require": ["sub", "sid", "did", "org", "mid", "exp", "iat"]},
+            options={"require": ["sub", "sid", "did", "exp", "iat"]},
         )
+        if ("org" in claims) != ("mid" in claims) or (
+            "org" in claims and (not claims["org"] or not claims["mid"])
+        ):
+            raise ValueError("Incomplete tenant context")
         return Principal(
-            UUID(claims["org"]),
+            UUID(claims["org"]) if "org" in claims else None,
             UUID(claims["sub"]),
-            UUID(claims["mid"]),
+            UUID(claims["mid"]) if "mid" in claims else UUID(claims["sub"]),
             UUID(claims["did"]),
             authorization=authorization,
         )
-    except (jwt.PyJWTError, KeyError, ValueError) as exc:
+    except (jwt.PyJWTError, KeyError, TypeError, ValueError) as exc:
         raise HTTPException(401, "invalid trusted service context") from exc
 
 
 def can_access(principal: Principal, conversation_id: UUID) -> bool:
     return conversation_id in principal.conversations
+
+
+async def try_authorize_conversation(principal: Principal, conversation_id: UUID) -> bool:
+    try:
+        await authorize_conversation(principal, conversation_id)
+    except HTTPException:
+        return False
+    return True
 
 
 async def authorize_conversation(principal: Principal, conversation_id: UUID):
@@ -58,23 +70,50 @@ async def authorize_conversation(principal: Principal, conversation_id: UUID):
     from urllib.error import HTTPError, URLError
     from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+    configured = get_settings()
+    if not configured.internal_service_token:
+        raise HTTPException(503, "conversation authorization is not configured")
+
     class NoRedirect(HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             return None
 
     def check():
         request = Request(
-            f"{get_settings().conversation_api_url.rstrip('/')}/api/v1/conversations/{conversation_id}",
-            headers={"Authorization": principal.authorization},
+            f"{configured.conversation_api_url.rstrip('/')}/internal/v1/conversations/{conversation_id}/authorize",
+            data=json.dumps(
+                {
+                    "organization_id": str(principal.organization_id)
+                    if principal.organization_id
+                    else None,
+                    "member_id": str(principal.member_id),
+                    "identity_id": str(principal.user_id),
+                }
+            ).encode(),
+            headers={
+                "X-Internal-Service-Token": configured.internal_service_token,
+                "Content-Type": "application/json",
+            },
+            method="POST",
         )
         try:
             with build_opener(NoRedirect()).open(request, timeout=5) as response:
                 data = json.loads(response.read(65536))
-                if str(data.get("id")) != str(conversation_id) or data.get("status") != "ACTIVE":
+                if not isinstance(data, dict):
+                    raise HTTPException(503, "conversation authorization response is invalid")
+                if (
+                    data.get("allowed") is not True
+                    or data.get("conversation_id") != str(conversation_id)
+                    or data.get("member_id") != str(principal.member_id)
+                    or data.get("organization_id")
+                    != (str(principal.organization_id) if principal.organization_id else None)
+                    or data.get("user_id") != str(principal.user_id)
+                ):
                     raise HTTPException(403, "conversation access denied")
         except HTTPError as exc:
             raise HTTPException(
-                403 if exc.code in {401, 403, 404} else 503, "conversation access unavailable"
+                403 if exc.code in {401, 403, 404} else 503,
+                "conversation access unavailable",
             ) from None
         except (URLError, TimeoutError, ValueError):
             raise HTTPException(503, "conversation authorization unavailable") from None

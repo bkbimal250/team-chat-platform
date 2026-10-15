@@ -11,6 +11,7 @@ export type Conversation = {
   member_count: number;
   last_message_preview?: string | null;
   last_message_at?: string | null;
+  last_message_sequence?: number | null;
   unread_count?: number;
 };
 export type ChatMessage = {
@@ -25,6 +26,8 @@ export type ChatMessage = {
   created_at: string;
   edited_at?: string | null;
   deleted_at?: string | null;
+  forward_from_message_id?: string | null;
+  forward_from_conversation_id?: string | null;
   client_message_id?: string;
   member_id?: string;
   active?: boolean;
@@ -43,14 +46,23 @@ export type RealtimeFrame = {
 };
 
 export const chatApi = {
-  listConversations: (token: string) =>
-    apiRequest<Conversation[]>("/api/v1/conversations", {}, token),
-  listMessages: (conversationId: string, token: string, before?: number) =>
-    apiRequest<ChatMessage[]>(
-      `/api/v1/conversations/${conversationId}/messages?limit=50${before ? `&before_sequence=${before}` : ""}`,
+  listConversations: (token: string, signal?: AbortSignal) =>
+    apiRequest<Conversation[]>("/api/v1/conversations", { signal }, token),
+  listMessages: (
+    conversationId: string,
+    token: string,
+    before?: number,
+    after?: number,
+  ) => {
+    const query = new URLSearchParams({ limit: "50" });
+    if (before) query.set("before_sequence", String(before));
+    if (after) query.set("after_sequence", String(after));
+    return apiRequest<ChatMessage[]>(
+      `/api/v1/conversations/${conversationId}/messages?${query}`,
       {},
       token,
-    ),
+    );
+  },
   sendMessage: (
     conversationId: string,
     text: string,
@@ -65,6 +77,23 @@ export const chatApi = {
           client_message_id: clientMessageId,
           type: "TEXT",
           text,
+        }),
+      },
+      token,
+    ),
+  forwardMessage: (
+    conversationId: string,
+    messageId: string,
+    token: string,
+  ) =>
+    apiRequest<ChatMessage>(
+      `/api/v1/conversations/${conversationId}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_message_id: crypto.randomUUID(),
+          type: "TEXT",
+          forward_from_message_id: messageId,
         }),
       },
       token,

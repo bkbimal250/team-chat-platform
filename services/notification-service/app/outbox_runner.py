@@ -24,7 +24,9 @@ async def run() -> None:
             "event_type": event.event_type,
             "event_version": 1,
             "producer": "notification-service",
-            "organization_id": str(event.organization_id),
+            "organization_id": str(event.organization_id)
+            if event.organization_id
+            else None,
             "aggregate_id": str(event.id),
             "correlation_id": str(event.event_id),
             "payload": event.payload,

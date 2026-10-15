@@ -10,6 +10,7 @@ from app.models.models import Identity, QRLoginChallenge, QRStatus
 from app.schemas.api import DeviceInput, QRCreateResponse
 from app.security.hashing import hash_secret, new_secret, verify_secret
 from app.services.audit import audit_and_event
+from app.services.qr_deep_link import build_qr_challenge_payload
 from app.services.session_service import SessionService
 
 
@@ -42,7 +43,9 @@ class QRService:
         )
         return QRCreateResponse(
             challenge_id=challenge.public_challenge_id,
-            payload=f"{settings.organization_service_url}link-device?challenge={challenge.public_challenge_id}.{secret}",
+            payload=build_qr_challenge_payload(
+                str(settings.QR_DEEP_LINK_BASE), challenge.public_challenge_id, secret
+            ),
             expires_at=challenge.expires_at,
         )
 

@@ -1,3 +1,5 @@
+> Preserved phone OTP reference: disabled in the current primary flow. Use [email/password authentication](EMAIL-PASSWORD-AUTH.md) for normal local registration/login. Enable OTP explicitly only for future capability tests.
+
 # Company onboarding testing
 
 Use isolated local infrastructure only. No real SMS/FCM or production data changes.

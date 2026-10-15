@@ -43,8 +43,8 @@ class TokenResponse(BaseModel):
     refresh_token: str | None = None
     session_id: UUID
     device_id: UUID
-    organization_id: UUID
-    member_id: UUID
+    organization_id: UUID | None
+    member_id: UUID | None
 
 
 class RefreshRequest(BaseModel):

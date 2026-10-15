@@ -1,4 +1,19 @@
 "use client";
-import {useEffect,useState} from "react";
-export function notify(message:string){window.dispatchEvent(new CustomEvent("globalchat:toast",{detail:message}));}
-export function Toast(){const [message,setMessage]=useState("");useEffect(()=>{let timer:ReturnType<typeof setTimeout>;const show=(event:Event)=>{setMessage((event as CustomEvent<string>).detail);clearTimeout(timer);timer=setTimeout(()=>setMessage(""),4000);};window.addEventListener("globalchat:toast",show);return()=>{window.removeEventListener("globalchat:toast",show);clearTimeout(timer);};},[]);return message ? <div role="status" className="fixed bottom-24 right-4 z-50 max-w-sm rounded-xl bg-cyan-950 p-4 text-white shadow-lg">{message}<button aria-label="Dismiss notification" onClick={()=>setMessage("")} className="ml-4">×</button></div> : null;}
+
+import { Toaster, toast } from "sonner";
+
+export function notify(message: string) {
+  toast.success(message);
+}
+
+export function Toast() {
+  return (
+    <Toaster
+      closeButton
+      duration={5000}
+      position="bottom-right"
+      richColors
+      toastOptions={{ className: "font-sans" }}
+    />
+  );
+}

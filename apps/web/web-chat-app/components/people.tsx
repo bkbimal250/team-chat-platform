@@ -10,7 +10,7 @@ export function People({
 }) {
   return (
     <section>
-      <h1 className="text-3xl font-semibold">People</h1>
+      <h1 className="text-2xl font-semibold sm:text-3xl">Workspace Members</h1>
       <WorkspacePeople token={token} onConversation={onConversation} />
     </section>
   );

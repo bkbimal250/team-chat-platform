@@ -9,6 +9,11 @@ class DirectIn(BaseModel):
     member_id: UUID
 
 
+class PersonalDirectIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contact_id: UUID
+
+
 class GroupIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str = Field(min_length=1, max_length=200)

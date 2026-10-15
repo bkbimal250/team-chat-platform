@@ -5,22 +5,359 @@
   },
   "item": [
     {
-      "name": "Organization",
+      "name": "00 - Personal Accounts",
       "item": [
         {
-          "name": "GET /api/schema/",
+          "name": "Register Personal Account",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/personal",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Development Person\",\n  \"email\": \"{{login_email}}\",\n  \"phone\": \"{{phone_number}}\",\n  \"password\": \"{{password}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"GlobalChat Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Creates no organization or membership. Use private variables; never export passwords/tokens. Profile/settings/devices use normal bearer routes. Personal chat is unavailable."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Company Registration",
+      "item": [
+        {
+          "name": "Create Company \u2014 Email + Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Development Company\",\n  \"owner_name\": \"Development Owner\",\n  \"email\": \"{{login_email}}\",\n  \"phone\": \"{{phone_number}}\",\n  \"password\": \"{{password}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"GlobalChat Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Replace private placeholders; no OTP or SMS. Never export populated password/token variables."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Authentication",
+      "item": [
+        {
+          "name": "Email/password login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{login_email}}\",\n  \"password\": \"{{password}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"GlobalChat Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Replace private placeholders; no OTP or SMS. Never export populated password/token variables."
+          }
+        },
+        {
+          "name": "Refresh session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Replace private placeholders; no OTP or SMS. Never export populated password/token variables."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/schema/",
-            "description": "schema_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Replace private placeholders; no OTP or SMS. Never export populated password/token variables."
           }
         },
+        {
+          "name": "Accept email invitation / set password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\",\n  \"email\": \"{{login_email}}\",\n  \"password\": \"{{password}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"GlobalChat Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Local only. Replace private placeholders; no OTP or SMS. Never export populated password/token variables."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phone OTP - Future / Disabled",
+      "description": "AUTH_PHONE_OTP_ENABLED=false rejects provider requests. Preserved for explicitly enabled future local OTP testing. Do not run to send SMS.",
+      "item": [
+        {
+          "name": "DISABLED \u2014 POST /api/v1/auth/otp/request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
+            "description": "Source-derived identity otp_request. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"{{replace_with_valid_value}}\",\n  \"purpose\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DISABLED \u2014 POST /api/v1/auth/otp/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
+            "description": "Source-derived identity otp_verify. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{replace_with_actual_uuid}}\",\n  \"code\": \"{{replace_with_valid_value}}\",\n  \"device\": {\n    \"installation_id\": \"{{replace_with_valid_value}}\",\n    \"platform\": \"ANDROID\",\n    \"device_name\": \"{{replace_with_valid_value}}\",\n    \"device_model\": \"{{replace_with_valid_value}}\",\n    \"os_version\": \"{{replace_with_valid_value}}\",\n    \"app_version\": \"{{replace_with_valid_value}}\"\n  },\n  \"organization_id\": \"{{replace_with_actual_uuid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DISABLED \u2014 8 Returning login request",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"{{registration_phone}}\",\n  \"purpose\": \"LOGIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 202) pm.environment.set(\"challenge_id\", pm.response.json().challenge_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DISABLED \u2014 9 Returning login verify",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"code\": \"{{login_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Development Postman\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.response.code === 200){ const data=pm.response.json(); pm.environment.set(\"access_token\",data.access_token); pm.environment.set(\"refresh_token\",data.refresh_token); pm.environment.unset(\"login_otp\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DISABLED \u2014 Returning employee normal login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
+            "description": "Returning employee normal login. Auth: Public + existing OTP limits. Role: Existing phone policy. Response: 202 challenge_id and local-only development_code. Errors: Existing cooldown/rate/provider errors. Screen: Web phone login.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"{{employee_phone}}\",\n  \"purpose\": \"LOGIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DISABLED \u2014 Returning employee normal session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
+            "description": "Returning employee normal session. Auth: Public + OTP proof. Role: Active identity/membership. Response: 200 existing organization/member normal TokenResponse. Errors: OTP failures, REGISTRATION_NOT_ALLOWED, unavailable account. Screen: Web login.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{login_challenge_id}}\",\n  \"code\": \"{{login_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Local Employee Browser\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Organization",
+      "item": [
         {
           "name": "GET /api/v1/audit-logs/",
           "request": {
@@ -32,7 +369,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/audit-logs/",
-            "description": "v1_audit_logs_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -45,8 +382,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/audit-logs/{id}/",
-            "description": "v1_audit_logs_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/audit-logs/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -60,7 +397,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/branches/",
-            "description": "v1_branches_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -78,10 +415,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/branches/",
-            "description": "v1_branches_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization create. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"address\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"city\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"state\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"postal_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"code\": \"{{replace_with_valid_value}}\",\n  \"email\": \"{{replace_with_valid_value}}\",\n  \"phone\": \"{{replace_with_valid_value}}\",\n  \"address\": \"{{replace_with_valid_value}}\",\n  \"city\": \"{{replace_with_valid_value}}\",\n  \"state\": \"{{replace_with_valid_value}}\",\n  \"country\": \"{{replace_with_valid_value}}\",\n  \"postal_code\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -100,8 +437,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/",
-            "description": "v1_branches_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -118,11 +455,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/",
-            "description": "v1_branches_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/",
+            "description": "Source-derived organization partial_update. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"address\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"city\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"state\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"postal_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"code\": \"{{replace_with_valid_value}}\",\n  \"email\": \"{{replace_with_valid_value}}\",\n  \"phone\": \"{{replace_with_valid_value}}\",\n  \"address\": \"{{replace_with_valid_value}}\",\n  \"city\": \"{{replace_with_valid_value}}\",\n  \"state\": \"{{replace_with_valid_value}}\",\n  \"country\": \"{{replace_with_valid_value}}\",\n  \"postal_code\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -145,11 +482,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/lifecycle/",
-            "description": "v1_branches_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/lifecycle/",
+            "description": "Source-derived organization lifecycle. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"status\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -168,8 +505,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/",
-            "description": "v1_branches_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/members/",
+            "description": "Source-derived organization members. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -186,11 +523,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/",
-            "description": "v1_branches_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/members/",
+            "description": "Source-derived organization members. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"is_primary\": false\n}",
+              "raw": "{\n  \"member_id\": \"{{replace_with_actual_uuid}}\",\n  \"is_primary\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -209,8 +546,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/{membership_id}/leave/",
-            "description": "v1_branches_members_leave_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/members/{{membership_id}}/leave/",
+            "description": "Source-derived organization remove_member. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -223,8 +560,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/branches/{id}/members/{membership_id}/primary/",
-            "description": "v1_branches_members_primary_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/branches/{{id}}/members/{{membership_id}}/primary/",
+            "description": "Source-derived organization primary. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -238,7 +575,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/invitations/",
-            "description": "v1_invitations_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -256,10 +593,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/invitations/",
-            "description": "v1_invitations_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization create. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"team_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"intended_role_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"expires_at\": \"2026-10-04T00:00:00Z\"\n}",
+              "raw": "{\n  \"team_id\": \"{{replace_with_actual_uuid}}\",\n  \"branch_id\": \"{{replace_with_actual_uuid}}\",\n  \"intended_role_id\": \"{{replace_with_actual_uuid}}\",\n  \"expires_at\": \"{{replace_with_valid_timestamp}}\",\n  \"recipient_name\": \"{{replace_with_valid_value}}\",\n  \"recipient_phone\": \"{{replace_with_valid_value}}\",\n  \"recipient_email\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -278,8 +615,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/",
-            "description": "v1_invitations_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -296,17 +633,31 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/accept/",
-            "description": "v1_invitations_accept_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{id}}/accept/",
+            "description": "Source-derived organization accept. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"member_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
+          }
+        },
+        {
+          "name": "POST /api/v1/invitations/{id}/resend/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{id}}/resend/",
+            "description": "Source-derived organization resend. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -319,8 +670,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/invitations/{id}/revoke/",
-            "description": "v1_invitations_revoke_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{id}}/revoke/",
+            "description": "Source-derived organization revoke. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -334,7 +685,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/members/",
-            "description": "v1_members_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -352,10 +703,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/members/",
-            "description": "v1_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization create. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"employee_code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"designation\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"department\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"display_name\": \"{{replace_with_valid_value}}\",\n  \"employee_code\": \"{{replace_with_valid_value}}\",\n  \"designation\": \"{{replace_with_valid_value}}\",\n  \"department\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -374,8 +725,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/members/{id}/",
-            "description": "v1_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/members/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -392,11 +743,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/members/{id}/",
-            "description": "v1_members_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/members/{{id}}/",
+            "description": "Source-derived organization partial_update. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"employee_code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"designation\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"department\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"display_name\": \"{{replace_with_valid_value}}\",\n  \"employee_code\": \"{{replace_with_valid_value}}\",\n  \"designation\": \"{{replace_with_valid_value}}\",\n  \"department\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -419,11 +770,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/members/{id}/lifecycle/",
-            "description": "v1_members_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/members/{{id}}/lifecycle/",
+            "description": "Source-derived organization lifecycle. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"status\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -446,11 +797,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/members/{id}/roles/",
-            "description": "v1_members_roles_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/members/{{id}}/roles/",
+            "description": "Source-derived organization roles. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"remove\": false\n}",
+              "raw": "{\n  \"role_id\": \"{{replace_with_actual_uuid}}\",\n  \"remove\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -470,7 +821,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/organizations/current/",
-            "description": "v1_organizations_current_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization current. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -488,10 +839,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/organizations/current/",
-            "description": "v1_organizations_current_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization current. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"slug\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"organization_type\": \"BUSINESS\",\n  \"logo_media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"email\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"phone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"timezone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"country_code\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"slug\": \"{{replace_with_valid_value}}\",\n  \"display_name\": \"{{replace_with_valid_value}}\",\n  \"organization_type\": \"BUSINESS\",\n  \"logo_media_id\": \"{{replace_with_actual_uuid}}\",\n  \"email\": \"{{replace_with_valid_value}}\",\n  \"phone\": \"{{replace_with_valid_value}}\",\n  \"timezone\": \"{{replace_with_valid_value}}\",\n  \"country_code\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -515,10 +866,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/organizations/current/lifecycle/",
-            "description": "v1_organizations_current_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization lifecycle. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"status\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -538,7 +889,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/organizations/current/settings/",
-            "description": "v1_organizations_current_settings_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization organization_settings. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -556,10 +907,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/organizations/current/settings/",
-            "description": "v1_organizations_current_settings_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization organization_settings. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"allow_member_invites\": true,\n  \"allow_group_creation\": true,\n  \"allow_external_chat\": true,\n  \"max_members\": 0,\n  \"max_teams\": 0,\n  \"default_timezone\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"allow_member_invites\": false,\n  \"allow_group_creation\": false,\n  \"allow_external_chat\": false,\n  \"max_members\": 0,\n  \"max_teams\": 0,\n  \"default_timezone\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -579,7 +930,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/permissions/",
-            "description": "v1_permissions_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -593,7 +944,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/role-assignments/",
-            "description": "v1_role_assignments_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -607,7 +958,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/roles/",
-            "description": "v1_roles_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -625,10 +976,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/roles/",
-            "description": "v1_roles_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization create. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"permission_codes\": [\n    \"<REPLACE_WITH_VALID_VALUE>\"\n  ]\n}",
+              "raw": "{\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"permission_codes\": [\n    \"{{replace_with_valid_value}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -647,8 +998,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/roles/{id}/",
-            "description": "v1_roles_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/roles/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -662,7 +1013,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/teams/",
-            "description": "v1_teams_list. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "description": "Source-derived organization list. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -680,10 +1031,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/teams/",
-            "description": "v1_teams_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "description": "Source-derived organization create. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"type\": \"STANDARD\"\n}",
+              "raw": "{\n  \"branch_id\": \"{{replace_with_actual_uuid}}\",\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"description\": \"{{replace_with_valid_value}}\",\n  \"type\": \"STANDARD\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -702,8 +1053,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/",
-            "description": "v1_teams_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/",
+            "description": "Source-derived organization retrieve. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -720,11 +1071,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/",
-            "description": "v1_teams_partial_update. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/",
+            "description": "Source-derived organization partial_update. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"branch_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"type\": \"STANDARD\"\n}",
+              "raw": "{\n  \"branch_id\": \"{{replace_with_actual_uuid}}\",\n  \"name\": \"{{replace_with_valid_value}}\",\n  \"description\": \"{{replace_with_valid_value}}\",\n  \"type\": \"STANDARD\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -747,11 +1098,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/lifecycle/",
-            "description": "v1_teams_lifecycle_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/lifecycle/",
+            "description": "Source-derived organization lifecycle. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"status\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -770,8 +1121,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/",
-            "description": "v1_teams_members_retrieve. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/members/",
+            "description": "Source-derived organization members. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -788,11 +1139,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/",
-            "description": "v1_teams_members_create. Replace schema placeholders. See services/ORGANIZATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/members/",
+            "description": "Source-derived organization members. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"role\": \"MEMBER\"\n}",
+              "raw": "{\n  \"member_id\": \"{{replace_with_actual_uuid}}\",\n  \"role\": \"OWNER\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -811,8 +1162,96 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/teams/{id}/members/{membership_id}/leave/",
-            "description": "v1_teams_members_leave_create. Replace schema placeholders. See services/ORGANIZATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/teams/{{id}}/members/{{membership_id}}/leave/",
+            "description": "Source-derived organization remove_member. Authentication: Bearer access token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{organization_base_url}}/health/live",
+            "description": "Source-derived organization live. Authentication: None at this layer. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{organization_base_url}}/health/ready",
+            "description": "Source-derived organization ready. Authentication: None at this layer. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "POST /api/internal/v1/company-registration/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              }
+            ],
+            "url": "{{organization_base_url}}/api/internal/v1/company-registration/",
+            "description": "Source-derived organization company_registration. Authentication: Internal service token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /api/internal/v1/identity-memberships/{identity_id}/",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              }
+            ],
+            "url": "{{organization_base_url}}/api/internal/v1/identity-memberships/{{identity_id}}/",
+            "description": "Source-derived organization identity_memberships. Authentication: Internal service token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "POST /api/internal/v1/invitations/validate/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              }
+            ],
+            "url": "{{organization_base_url}}/api/internal/v1/invitations/validate/",
+            "description": "Source-derived organization invitation_onboarding. Authentication: Internal service token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "POST /api/internal/v1/invitations/accept/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              }
+            ],
+            "url": "{{organization_base_url}}/api/internal/v1/invitations/accept/",
+            "description": "Source-derived organization invitation_onboarding. Authentication: Internal service token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "POST /api/internal/v1/invitations/resume/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              }
+            ],
+            "url": "{{organization_base_url}}/api/internal/v1/invitations/resume/",
+            "description": "Source-derived organization invitation_onboarding. Authentication: Internal service token. See services/ORGANIZATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         }
       ]
@@ -826,7 +1265,7 @@
             "method": "GET",
             "header": [],
             "url": "{{identity_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity live. Authentication: None at this layer. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -835,53 +1274,7 @@
             "method": "GET",
             "header": [],
             "url": "{{identity_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/IDENTITY-API.md."
-          }
-        },
-        {
-          "name": "POST /api/v1/auth/otp/request",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
-            "description": "Otp Request. Replace schema placeholders. See services/IDENTITY-API.md.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"phone_number\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"purpose\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/v1/auth/otp/verify",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
-            "description": "Otp Verify. Replace schema placeholders. See services/IDENTITY-API.md.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"challenge_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"code\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"device\": {\n    \"installation_id\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"platform\": \"ANDROID\",\n    \"device_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"device_model\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"os_version\": \"<REPLACE_WITH_VALID_VALUE>\",\n    \"app_version\": \"<REPLACE_WITH_VALID_VALUE>\"\n  },\n  \"organization_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Source-derived identity ready. Authentication: None at this layer. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -895,10 +1288,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/refresh",
-            "description": "Refresh. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "description": "Source-derived identity refresh. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refresh_token\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"refresh_token\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -918,7 +1311,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/logout",
-            "description": "Logout. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity logout. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -932,7 +1325,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/logout-all",
-            "description": "Logout All. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity logout_all. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -950,10 +1343,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/context",
-            "description": "Switch Context. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "description": "Source-derived identity switch_context. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"organization_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"organization_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -973,7 +1366,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/me",
-            "description": "Me. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity me. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -987,10 +1380,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges",
-            "description": "Qr Create. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "description": "Source-derived identity qr_create. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"installation_id\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"platform\": \"ANDROID\",\n  \"device_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"device_model\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"os_version\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"app_version\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"installation_id\": \"{{replace_with_valid_value}}\",\n  \"platform\": \"ANDROID\",\n  \"device_name\": \"{{replace_with_valid_value}}\",\n  \"device_model\": \"{{replace_with_valid_value}}\",\n  \"os_version\": \"{{replace_with_valid_value}}\",\n  \"app_version\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1004,8 +1397,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/status",
-            "description": "Qr Status. Replace schema placeholders. See services/IDENTITY-API.md."
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{{challenge_id}}/status",
+            "description": "Source-derived identity qr_status. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1022,11 +1415,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/authorize",
-            "description": "Qr Authorize. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{{challenge_id}}/authorize",
+            "description": "Source-derived identity qr_authorize. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"secret\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"secret\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1045,11 +1438,172 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{challenge_id}/consume",
-            "description": "Qr Consume. Replace schema placeholders. See services/IDENTITY-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/auth/qr/challenges/{{challenge_id}}/consume",
+            "description": "Source-derived identity qr_consume. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"secret\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"secret\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/registration/company/start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/start",
+            "description": "Source-derived identity start. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"{{replace_with_valid_value}}\",\n  \"owner_name\": \"{{replace_with_valid_value}}\",\n  \"email\": \"{{replace_with_valid_value}}\",\n  \"phone\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/registration/company/resend",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/resend",
+            "description": "Source-derived identity resend. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_id\": \"{{replace_with_actual_uuid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/registration/company/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/registration/company/verify",
+            "description": "Source-derived identity verify. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_id\": \"{{replace_with_actual_uuid}}\",\n  \"otp\": \"{{replace_with_valid_value}}\",\n  \"device\": {\n    \"installation_id\": \"{{replace_with_valid_value}}\",\n    \"platform\": \"ANDROID\",\n    \"device_name\": \"{{replace_with_valid_value}}\",\n    \"device_model\": \"{{replace_with_valid_value}}\",\n    \"os_version\": \"{{replace_with_valid_value}}\",\n    \"app_version\": \"{{replace_with_valid_value}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/invitations/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/validate",
+            "description": "Source-derived identity validate. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/invitations/resend",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/resend",
+            "description": "Source-derived identity request_otp. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/invitations/request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/request",
+            "description": "Source-derived identity request_otp. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/invitations/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/verify",
+            "description": "Source-derived identity verify. Authentication: No bearer; challenge/refresh proof where required. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onboarding_id\": \"{{replace_with_actual_uuid}}\",\n  \"otp\": \"{{replace_with_valid_value}}\",\n  \"device\": {\n    \"installation_id\": \"{{replace_with_valid_value}}\",\n    \"platform\": \"ANDROID\",\n    \"device_name\": \"{{replace_with_valid_value}}\",\n    \"device_model\": \"{{replace_with_valid_value}}\",\n    \"os_version\": \"{{replace_with_valid_value}}\",\n    \"app_version\": \"{{replace_with_valid_value}}\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1069,7 +1623,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/devices",
-            "description": "Devices. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity devices. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1082,8 +1636,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/devices/{device_id}",
-            "description": "Device. Replace schema placeholders. See services/IDENTITY-API.md."
+            "url": "{{gateway_base_url}}/api/v1/devices/{{device_id}}",
+            "description": "Source-derived identity device. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1096,8 +1650,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/devices/{device_id}/revoke",
-            "description": "Revoke Device. Replace schema placeholders. See services/IDENTITY-API.md."
+            "url": "{{gateway_base_url}}/api/v1/devices/{{device_id}}/revoke",
+            "description": "Source-derived identity revoke_device. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1111,7 +1665,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/auth/sessions",
-            "description": "Sessions. Replace schema placeholders. See services/IDENTITY-API.md."
+            "description": "Source-derived identity sessions. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1124,8 +1678,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/auth/sessions/{session_id}/revoke",
-            "description": "Revoke. Replace schema placeholders. See services/IDENTITY-API.md."
+            "url": "{{gateway_base_url}}/api/v1/auth/sessions/{{session_id}}/revoke",
+            "description": "Source-derived identity revoke. Authentication: Bearer access token. See services/IDENTITY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         }
       ]
@@ -1139,7 +1693,7 @@
             "method": "GET",
             "header": [],
             "url": "{{user_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user live. Authentication: None at this layer. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1148,7 +1702,7 @@
             "method": "GET",
             "header": [],
             "url": "{{user_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user ready. Authentication: None at this layer. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1166,10 +1720,10 @@
               }
             ],
             "url": "{{user_base_url}}/internal/v1/users/block-check",
-            "description": "Block Check. Replace schema placeholders. See services/USER-API.md.",
+            "description": "Source-derived user block_check. Authentication: Internal service token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"user_a_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"user_b_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"user_a_id\": \"{{replace_with_actual_uuid}}\",\n  \"user_b_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1193,10 +1747,10 @@
               }
             ],
             "url": "{{user_base_url}}/internal/v1/users/projections",
-            "description": "Projections. Replace schema placeholders. See services/USER-API.md.",
+            "description": "Source-derived user projections. Authentication: Internal service token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"user_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "raw": "{\n  \"user_ids\": [\n    \"{{replace_with_actual_uuid}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1216,7 +1770,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me",
-            "description": "Me. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user me. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1234,10 +1788,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me",
-            "description": "Update Me. Replace schema placeholders. See services/USER-API.md.",
+            "description": "Source-derived user update_me. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"display_name\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"avatar_media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"about\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"display_name\": \"{{replace_with_valid_value}}\",\n  \"avatar_media_id\": \"{{replace_with_actual_uuid}}\",\n  \"about\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1257,7 +1811,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me/preferences",
-            "description": "Preferences. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user preferences. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1275,10 +1829,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me/preferences",
-            "description": "Update Preferences. Replace schema placeholders. See services/USER-API.md.",
+            "description": "Source-derived user update_preferences. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"language\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"timezone\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"theme_preference\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"enter_to_send\": true,\n  \"media_auto_download\": true,\n  \"link_preview_enabled\": true\n}",
+              "raw": "{\n  \"language\": \"{{replace_with_valid_value}}\",\n  \"timezone\": \"{{replace_with_valid_value}}\",\n  \"theme_preference\": \"{{replace_with_valid_value}}\",\n  \"enter_to_send\": false,\n  \"media_auto_download\": false,\n  \"link_preview_enabled\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1297,8 +1851,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/users/{user_id}/block",
-            "description": "Block. Replace schema placeholders. See services/USER-API.md."
+            "url": "{{gateway_base_url}}/api/v1/users/{{user_id}}/block",
+            "description": "Source-derived user block. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1311,8 +1865,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/users/{user_id}/block",
-            "description": "Unblock. Replace schema placeholders. See services/USER-API.md."
+            "url": "{{gateway_base_url}}/api/v1/users/{{user_id}}/block",
+            "description": "Source-derived user unblock. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1326,7 +1880,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me/privacy",
-            "description": "Privacy. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user privacy. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1344,10 +1898,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me/privacy",
-            "description": "Update Privacy. Replace schema placeholders. See services/USER-API.md.",
+            "description": "Source-derived user update_privacy. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"profile_photo_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"about_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"online_status_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"last_seen_visibility\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"read_receipts_enabled\": true\n}",
+              "raw": "{\n  \"profile_photo_visibility\": \"{{replace_with_valid_value}}\",\n  \"about_visibility\": \"{{replace_with_valid_value}}\",\n  \"online_status_visibility\": \"{{replace_with_valid_value}}\",\n  \"last_seen_visibility\": \"{{replace_with_valid_value}}\",\n  \"read_receipts_enabled\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1367,7 +1921,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/me/blocked",
-            "description": "Blocked Users. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user blocked_users. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1381,7 +1935,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/users/search",
-            "description": "Search Users. Replace schema placeholders. See services/USER-API.md."
+            "description": "Source-derived user search_users. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1394,8 +1948,62 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/users/{user_id}",
-            "description": "Get Profile. Replace schema placeholders. See services/USER-API.md."
+            "url": "{{gateway_base_url}}/api/v1/users/{{user_id}}",
+            "description": "Source-derived user get_profile. Authentication: Bearer access token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "POST /internal/v1/users/company-owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{user_base_url}}/internal/v1/users/company-owner",
+            "description": "Source-derived user provision_owner. Authentication: Internal service token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identity_id\": \"{{replace_with_actual_uuid}}\",\n  \"display_name\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /internal/v1/users/provision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Service-Token",
+                "value": "{{internal_service_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{user_base_url}}/internal/v1/users/provision",
+            "description": "Source-derived user provision_owner. Authentication: Internal service token. See services/USER-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identity_id\": \"{{replace_with_actual_uuid}}\",\n  \"display_name\": \"{{replace_with_valid_value}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         }
       ]
@@ -1409,7 +2017,7 @@
             "method": "GET",
             "header": [],
             "url": "{{conversation_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "description": "Source-derived conversation live. Authentication: None at this layer. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1418,7 +2026,7 @@
             "method": "GET",
             "header": [],
             "url": "{{conversation_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "description": "Source-derived conversation ready. Authentication: None at this layer. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1436,10 +2044,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/conversations/direct",
-            "description": "Direct. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "description": "Source-derived conversation direct. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"member_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1463,10 +2071,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/conversations/groups",
-            "description": "Group. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "description": "Source-derived conversation group. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"member_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "raw": "{\n  \"title\": \"{{replace_with_valid_value}}\",\n  \"description\": \"{{replace_with_valid_value}}\",\n  \"member_ids\": [\n    \"{{replace_with_actual_uuid}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1486,7 +2094,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/conversations",
-            "description": "List Conversations. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "description": "Source-derived conversation list_conversations. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1499,35 +2107,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}",
-            "description": "Get. Replace schema placeholders. See services/CONVERSATION-API.md."
-          }
-        },
-        {
-          "name": "PATCH /api/v1/conversations/{cid}",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}",
-            "description": "Update. Replace schema placeholders. See services/CONVERSATION-API.md.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"description\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"avatar_media_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}",
+            "description": "Source-derived conversation get. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1544,31 +2125,17 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members",
-            "description": "Add. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/members",
+            "description": "Source-derived conversation add. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "raw": "{\n  \"member_ids\": [\n    \"{{replace_with_actual_uuid}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
-        },
-        {
-          "name": "GET /api/v1/conversations/{cid}/members",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members",
-            "description": "Members. Replace schema placeholders. See services/CONVERSATION-API.md."
           }
         },
         {
@@ -1581,8 +2148,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}",
-            "description": "Remove. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/members/{{mid}}",
+            "description": "Source-derived conversation remove. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1595,8 +2162,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/leave",
-            "description": "Leave. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/leave",
+            "description": "Source-derived conversation leave. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1609,8 +2176,22 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/close",
-            "description": "Close. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/close",
+            "description": "Source-derived conversation close. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /api/v1/conversations/{cid}/members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/members",
+            "description": "Source-derived conversation members. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1623,8 +2204,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}/promote",
-            "description": "Promote. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/members/{{mid}}/promote",
+            "description": "Source-derived conversation promote. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1637,8 +2218,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/members/{mid}/demote",
-            "description": "Demote. Replace schema placeholders. See services/CONVERSATION-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/members/{{mid}}/demote",
+            "description": "Source-derived conversation demote. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1655,11 +2236,38 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/transfer-ownership",
-            "description": "Transfer. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/transfer-ownership",
+            "description": "Source-derived conversation transfer. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"member_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"member_id\": \"{{replace_with_actual_uuid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/conversations/{cid}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}",
+            "description": "Source-derived conversation update. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{replace_with_valid_value}}\",\n  \"description\": \"{{replace_with_valid_value}}\",\n  \"avatar_media_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1682,11 +2290,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{cid}/state",
-            "description": "State. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{cid}}/state",
+            "description": "Source-derived conversation state. Authentication: Bearer access token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"is_archived\": true,\n  \"is_pinned\": true,\n  \"muted_until\": \"2026-10-04T00:00:00Z\",\n  \"is_muted_forever\": true,\n  \"notification_level\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"is_archived\": false,\n  \"is_pinned\": false,\n  \"muted_until\": \"{{replace_with_valid_timestamp}}\",\n  \"is_muted_forever\": false,\n  \"notification_level\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1709,8 +2317,8 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{conversation_base_url}}/internal/v1/conversations/{cid}/authorize",
-            "description": "Authorize Send. Replace schema placeholders. See services/CONVERSATION-API.md.",
+            "url": "{{conversation_base_url}}/internal/v1/conversations/{{cid}}/authorize",
+            "description": "Source-derived conversation authorize_send. Authentication: Internal service token. See services/CONVERSATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -1733,7 +2341,7 @@
             "method": "GET",
             "header": [],
             "url": "{{messaging_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/MESSAGING-API.md."
+            "description": "Source-derived messaging live. Authentication: None at this layer. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1742,7 +2350,7 @@
             "method": "GET",
             "header": [],
             "url": "{{messaging_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/MESSAGING-API.md."
+            "description": "Source-derived messaging ready. Authentication: None at this layer. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1759,11 +2367,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/messages",
-            "description": "Create. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{conversation_id}}/messages",
+            "description": "Source-derived messaging create. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"client_message_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"type\": \"TEXT\",\n  \"text\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"media_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"reply_to_message_id\": \"00000000-0000-4000-8000-000000000001\"\n}",
+              "raw": "{\n  \"client_message_id\": \"{{replace_with_actual_uuid}}\",\n  \"type\": \"TEXT\",\n  \"text\": \"{{replace_with_valid_value}}\",\n  \"media_id\": \"{{replace_with_actual_uuid}}\",\n  \"reply_to_message_id\": \"{{replace_with_actual_uuid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1782,8 +2390,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/messages",
-            "description": "History. Replace schema placeholders. See services/MESSAGING-API.md."
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{conversation_id}}/messages",
+            "description": "Source-derived messaging history. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1800,11 +2408,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}",
-            "description": "Edit. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/messages/{{message_id}}",
+            "description": "Source-derived messaging edit. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"text\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"text\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1823,8 +2431,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}",
-            "description": "Delete. Replace schema placeholders. See services/MESSAGING-API.md."
+            "url": "{{gateway_base_url}}/api/v1/messages/{{message_id}}",
+            "description": "Source-derived messaging delete. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1841,11 +2449,11 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}/reactions",
-            "description": "Add Reaction. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/messages/{{message_id}}/reactions",
+            "description": "Source-derived messaging add_reaction. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reaction\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"reaction\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1864,8 +2472,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/messages/{message_id}/reactions/{reaction}",
-            "description": "Remove Reaction. Replace schema placeholders. See services/MESSAGING-API.md."
+            "url": "{{gateway_base_url}}/api/v1/messages/{{message_id}}/reactions/{{reaction}}",
+            "description": "Source-derived messaging remove_reaction. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1882,8 +2490,8 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/delivered",
-            "description": "Delivered. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{conversation_id}}/delivered",
+            "description": "Source-derived messaging delivered. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sequence\": 1.0\n}",
@@ -1909,8 +2517,8 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/conversations/{conversation_id}/read",
-            "description": "Read. Replace schema placeholders. See services/MESSAGING-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/conversations/{{conversation_id}}/read",
+            "description": "Source-derived messaging read. Authentication: Bearer access token. See services/MESSAGING-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sequence\": 1.0\n}",
@@ -1928,12 +2536,30 @@
       "name": "Media",
       "item": [
         {
+          "name": "PUT /local-storage/{token}",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{media_base_url}}/local-storage/{{token}}",
+            "description": "Source-derived media local_put. Authentication: Signed capability in URL. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /local-storage/{token}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{media_base_url}}/local-storage/{{token}}",
+            "description": "Source-derived media local_get. Authentication: Signed capability in URL. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
           "name": "GET /health/live",
           "request": {
             "method": "GET",
             "header": [],
             "url": "{{media_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/MEDIA-API.md."
+            "description": "Source-derived media live. Authentication: None at this layer. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1942,7 +2568,7 @@
             "method": "GET",
             "header": [],
             "url": "{{media_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/MEDIA-API.md."
+            "description": "Source-derived media ready. Authentication: None at this layer. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -1960,10 +2586,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/media/uploads",
-            "description": "Initiate Upload. Replace schema placeholders. See services/MEDIA-API.md.",
+            "description": "Source-derived media initiate_upload. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"conversation_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"filename\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"mime_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"size_bytes\": 1,\n  \"media_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"checksum_sha256\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"conversation_id\": \"{{replace_with_actual_uuid}}\",\n  \"filename\": \"{{replace_with_valid_value}}\",\n  \"mime_type\": \"{{replace_with_valid_value}}\",\n  \"size_bytes\": 1,\n  \"media_type\": \"{{replace_with_valid_value}}\",\n  \"checksum_sha256\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1987,10 +2613,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/media/multipart",
-            "description": "Initiate Multipart. Replace schema placeholders. See services/MEDIA-API.md.",
+            "description": "Source-derived media initiate_multipart. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"conversation_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"filename\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"mime_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"size_bytes\": 1,\n  \"media_type\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"checksum_sha256\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"conversation_id\": \"{{replace_with_actual_uuid}}\",\n  \"filename\": \"{{replace_with_valid_value}}\",\n  \"mime_type\": \"{{replace_with_valid_value}}\",\n  \"size_bytes\": 1,\n  \"media_type\": \"{{replace_with_valid_value}}\",\n  \"checksum_sha256\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2013,8 +2639,8 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart/parts",
-            "description": "Multipart Parts. Replace schema placeholders. See services/MEDIA-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/multipart/parts",
+            "description": "Source-derived media multipart_parts. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"part_numbers\": [\n    1\n  ]\n}",
@@ -2036,22 +2662,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart",
-            "description": "Multipart Resume. Replace schema placeholders. See services/MEDIA-API.md."
-          }
-        },
-        {
-          "name": "DELETE /api/v1/media/{media_id}/multipart",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart",
-            "description": "Abort Multipart. Replace schema placeholders. See services/MEDIA-API.md."
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/multipart",
+            "description": "Source-derived media multipart_resume. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2068,8 +2680,8 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/multipart/complete",
-            "description": "Complete Multipart. Replace schema placeholders. See services/MEDIA-API.md.",
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/multipart/complete",
+            "description": "Source-derived media complete_multipart. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"parts\": [\n    {}\n  ]\n}",
@@ -2082,6 +2694,20 @@
           }
         },
         {
+          "name": "DELETE /api/v1/media/{media_id}/multipart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/multipart",
+            "description": "Source-derived media abort_multipart. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
           "name": "POST /api/v1/media/{media_id}/complete",
           "request": {
             "method": "POST",
@@ -2091,8 +2717,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/complete",
-            "description": "Complete Upload. Replace schema placeholders. See services/MEDIA-API.md."
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/complete",
+            "description": "Source-derived media complete_upload. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2105,8 +2731,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}/download",
-            "description": "Download. Replace schema placeholders. See services/MEDIA-API.md."
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}/download",
+            "description": "Source-derived media download. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2119,8 +2745,8 @@
                 "value": "Bearer {{access_token}}"
               }
             ],
-            "url": "{{gateway_base_url}}/api/v1/media/{media_id}",
-            "description": "Delete. Replace schema placeholders. See services/MEDIA-API.md."
+            "url": "{{gateway_base_url}}/api/v1/media/{{media_id}}",
+            "description": "Source-derived media delete. Authentication: Bearer access token. See services/MEDIA-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         }
       ]
@@ -2134,7 +2760,7 @@
             "method": "GET",
             "header": [],
             "url": "{{notification_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/NOTIFICATION-API.md."
+            "description": "Source-derived notification live. Authentication: None at this layer. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2143,7 +2769,7 @@
             "method": "GET",
             "header": [],
             "url": "{{notification_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/NOTIFICATION-API.md."
+            "description": "Source-derived notification ready. Authentication: None at this layer. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2161,10 +2787,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/notifications/devices/current/token",
-            "description": "Put Token. Replace schema placeholders. See services/NOTIFICATION-API.md.",
+            "description": "Source-derived notification put_token. Authentication: Bearer access token. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"platform\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"provider\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"push_token\": \"<REPLACE_WITH_VALID_VALUE>\"\n}",
+              "raw": "{\n  \"platform\": \"{{replace_with_valid_value}}\",\n  \"provider\": \"{{replace_with_valid_value}}\",\n  \"push_token\": \"{{replace_with_valid_value}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2184,7 +2810,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/notifications/devices/current/token",
-            "description": "Delete Token. Replace schema placeholders. See services/NOTIFICATION-API.md."
+            "description": "Source-derived notification delete_token. Authentication: Bearer access token. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2198,7 +2824,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/notifications/preferences",
-            "description": "Get Preferences. Replace schema placeholders. See services/NOTIFICATION-API.md."
+            "description": "Source-derived notification get_preferences. Authentication: Bearer access token. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2216,10 +2842,10 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/notifications/preferences",
-            "description": "Patch Preferences. Replace schema placeholders. See services/NOTIFICATION-API.md.",
+            "description": "Source-derived notification patch_preferences. Authentication: Bearer access token. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"push_enabled\": true,\n  \"message_notifications\": true,\n  \"group_notifications\": true,\n  \"notification_preview\": \"<REPLACE_WITH_VALID_VALUE>\",\n  \"sound_enabled\": true,\n  \"vibration_enabled\": true\n}",
+              "raw": "{\n  \"push_enabled\": false,\n  \"message_notifications\": false,\n  \"group_notifications\": false,\n  \"notification_preview\": \"{{replace_with_valid_value}}\",\n  \"sound_enabled\": false,\n  \"vibration_enabled\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2239,7 +2865,7 @@
               }
             ],
             "url": "{{gateway_base_url}}/api/v1/notifications",
-            "description": "List Notifications. Replace schema placeholders. See services/NOTIFICATION-API.md."
+            "description": "Source-derived notification list_notifications. Authentication: Bearer access token. See services/NOTIFICATION-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         }
       ]
@@ -2253,7 +2879,7 @@
             "method": "GET",
             "header": [],
             "url": "{{realtime_base_url}}/health/live",
-            "description": "Live. Replace schema placeholders. See services/REALTIME-API.md."
+            "description": "Source-derived realtime live. Authentication: None at this layer. See services/REALTIME-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         },
         {
@@ -2262,17 +2888,36 @@
             "method": "GET",
             "header": [],
             "url": "{{realtime_base_url}}/health/ready",
-            "description": "Ready. Replace schema placeholders. See services/REALTIME-API.md."
+            "description": "Source-derived realtime ready. Authentication: None at this layer. See services/REALTIME-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
           }
         }
       ]
     },
     {
       "name": "Gateway",
-      "item": []
+      "item": [
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_base_url}}/health/live",
+            "description": "Source-derived gateway live. Authentication: None at this layer. See services/GATEWAY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_base_url}}/health/ready",
+            "description": "Source-derived gateway ready. Authentication: None at this layer. See services/GATEWAY-API.md for constraints/response/checks. Replace placeholders; internal calls are operator-only. OTP/lifecycle/delete/logout must be run individually, never as automatic collection retries."
+          }
+        }
+      ]
     },
     {
-      "name": "Company registration - LOCAL ONLY",
+      "name": "Company phone OTP - Future / Disabled",
       "item": [
         {
           "name": "1 Register company",
@@ -2450,72 +3095,6 @@
               }
             }
           ]
-        },
-        {
-          "name": "8 Returning login request",
-          "request": {
-            "method": "POST",
-            "url": "{{gateway_base_url}}/api/v1/auth/otp/request",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"phone_number\": \"{{registration_phone}}\",\n  \"purpose\": \"LOGIN\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if(pm.response.code === 202) pm.environment.set(\"challenge_id\", pm.response.json().challenge_id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "9 Returning login verify",
-          "request": {
-            "method": "POST",
-            "url": "{{gateway_base_url}}/api/v1/auth/otp/verify",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"code\": \"{{login_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Development Postman\"\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if(pm.response.code === 200){ const data=pm.response.json(); pm.environment.set(\"access_token\",data.access_token); pm.environment.set(\"refresh_token\",data.refresh_token); pm.environment.unset(\"login_otp\"); }"
-                ]
-              }
-            }
-          ]
         }
       ],
       "event": [
@@ -2527,6 +3106,689 @@
               "const base = pm.environment.get(\"gateway_base_url\") || \"\";",
               "if (!/^http:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/.test(base)) { throw new Error(\"Company onboarding collection is local-only.\"); }"
             ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phone invitation OTP - Future / Disabled",
+      "description": "Real local lifecycle; see onboarding/MEMBER-INVITATION-TESTING.md. Secret variables remain blank; copy development invite fragment and OTP privately. Do not automatically run resend/revoke after acceptance. All requests through local Gateway.",
+      "item": [
+        {
+          "name": "Create a recipient-bound invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/",
+            "description": "Create a recipient-bound invitation. Auth: Bearer + invitation.create. Role: Owner/Admin or delegable Manager. Response: 201 invitation, transient development_url. Errors: INVITATION_PENDING, MEMBER_ALREADY_EXISTS, ROLE_ESCALATION_DENIED, INVALID_EXPIRY, PHONE_INVALID, INACTIVE_MEMBERSHIP_TARGET, DELIVERY_UNAVAILABLE. Screen: Admin Members -> Invitations -> Invite Member.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient_name\": \"Employee Name\",\n  \"recipient_phone\": \"{{employee_phone}}\",\n  \"recipient_email\": \"\",\n  \"intended_role_id\": \"{{role_id}}\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"team_id\": \"{{team_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tenant-scoped cursor list; status also accepts ACCEPTED/EXPIRED/REVOKED",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/?status=PENDING&page_size=20",
+            "description": "Tenant-scoped cursor list; status also accepts ACCEPTED/EXPIRED/REVOKED. Auth: Bearer + invitation.view. Role: Backend permission. Response: 200 {results,next,previous}; no token/hash. Errors: 401/403 permission failures. Screen: Admin Invitations."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tenant-scoped detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{invitation_id}}/",
+            "description": "Tenant-scoped detail. Auth: Bearer + invitation.view. Role: Backend permission. Response: 200 invitation without token/hash. Errors: 404 foreign/unknown ID. Screen: Admin Invitations/Postman."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rotate the pending recipient token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{invitation_id}}/resend/",
+            "description": "Rotate the pending recipient token. Auth: Bearer + invitation.create. Role: Backend delegation. Response: 200 same invitation + transient development_url. Errors: INVITATION_UNAVAILABLE, ROLE_ESCALATION_DENIED, INVITES_DISABLED. Screen: Admin Resend."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke pending invitation; accepted membership unchanged",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/invitations/{{invitation_id}}/revoke/",
+            "description": "Revoke pending invitation; accepted membership unchanged. Auth: Bearer + invitation.revoke. Role: Owner/Admin permission. Response: 200 REVOKED invitation. Errors: INVITATION_NOT_PENDING, 404 foreign ID. Screen: Admin Revoke confirmation."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Safely resolve an opaque invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/validate",
+            "description": "Safely resolve an opaque invitation. Auth: Public + per-IP rate limit. Role: Possession of opaque token. Response: 200 {valid,company_name,recipient_name,recipient_phone_masked,expires_at}. Errors: INVITATION_INVALID/EXPIRED/REVOKED/ACCEPTED/UNAVAILABLE, RATE_LIMITED. Screen: Employee /join.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request OTP for the stored recipient; resume an existing verified intent without another OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/request",
+            "description": "Request OTP for the stored recipient; resume an existing verified intent without another OTP. Auth: Public + existing OTP limits. Role: Possession of token. Response: 202 {onboarding_id,expires_at,resend_after,development_code,verified}; development_code is null outside development. Errors: Invitation failures, RATE_LIMITED, OTP_RESEND_COOLDOWN. Screen: Employee Continue.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request replacement OTP using the same authoritative token binding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/resend",
+            "description": "Request replacement OTP using the same authoritative token binding. Auth: Public + existing OTP limits. Role: Possession of token. Response: 202 same challenge schema, newly bound OTP or verified resume. Errors: Invitation failures and cooldown. Screen: Employee Resend code.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify bound OTP, complete saga and create normal session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/auth/invitations/verify",
+            "description": "Verify bound OTP, complete saga and create normal session. Auth: Public + challenge/code proof and attempt limit. Role: Recipient phone proof. Response: 200 normal TokenResponse access/refresh/session/device/organization/member. Errors: OTP_INVALID/EXPIRED/REPLAYED/TOO_MANY_ATTEMPTS, invitation failures, ACCOUNT_UNAVAILABLE, PROVISIONING_RETRY. Screen: Employee Verify and join workspace.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onboarding_id\": \"{{onboarding_id}}\",\n  \"otp\": \"{{invitation_otp}}\",\n  \"device\": {\n    \"installation_id\": \"{{installation_id}}\",\n    \"platform\": \"WEB\",\n    \"device_name\": \"Local Employee Browser\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify active member and assignments; phone masked",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/members/{{employee_member_id}}/",
+            "description": "Verify active member and assignments; phone masked. Auth: Bearer + member.view. Role: Current tenant membership. Response: 200 member plus roles, branches, teams, recipient_phone_masked. Errors: 404 foreign/unknown member. Screen: Admin Members / Postman."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const host = new URL(pm.variables.get(\"gateway_base_url\")).hostname;",
+                  "if (![\"localhost\", \"127.0.0.1\"].includes(host)) { throw new Error(\"Member onboarding collection is LOCAL ONLY\"); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Platform Administration",
+      "description": "C1 metadata-only platform APIs. Set access_token only after granting a trusted local account through the documented operator command. Tenant Owner/Admin/Member tokens must receive 403.",
+      "item": [
+        {
+          "name": "Organizations",
+          "item": [
+            {
+              "name": "List organizations \u2014 Super Admin",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": "{{gateway_base_url}}/api/v1/platform/organizations/?limit=20",
+                "description": "Auth: Bearer + platform.organizations.read. Metadata only. No tenant owner fallback."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('platform authorization is enforced', () => pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Identities",
+          "item": [
+            {
+              "name": "Current platform grant",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": "{{gateway_base_url}}/api/v1/platform/me",
+                "description": "No token: 401. Tenant role: 403. Active platform grant: 200."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('does not reveal credentials', () => { const body = pm.response.text(); pm.expect(body).to.not.include('password_hash'); pm.expect(body).to.not.include('refresh_token'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "description": "No C1 platform User projection route; intentionally unavailable.",
+          "item": []
+        },
+        {
+          "name": "Conversations",
+          "description": "No C1 cross-tenant conversation route; private chat stays unavailable.",
+          "item": []
+        },
+        {
+          "name": "Message Diagnostics",
+          "description": "No C1 message diagnostics route; message content stays unavailable.",
+          "item": []
+        },
+        {
+          "name": "Realtime",
+          "description": "No C1 realtime metrics route; no private event stream.",
+          "item": []
+        },
+        {
+          "name": "Media",
+          "description": "No C1 platform media route; private content stays unavailable.",
+          "item": []
+        },
+        {
+          "name": "Notifications",
+          "description": "No C1 notification diagnostics route; provider/token data stays unavailable.",
+          "item": []
+        },
+        {
+          "name": "Gateway/Services",
+          "item": [
+            {
+              "name": "Authorized service readiness",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": "{{gateway_base_url}}/api/v1/platform/services",
+                "description": "Gateway aggregates only live/ready booleans after platform.services.read."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('does not leak configuration', () => { const body = pm.response.text(); pm.expect(body).to.not.include('DATABASE_URL'); pm.expect(body).to.not.include('RABBITMQ'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Security",
+          "description": "Use the platform grant and service readiness requests with no token and tenant tokens to verify 401/403. No credential inspection endpoint exists.",
+          "item": []
+        }
+      ]
+    },
+    {
+      "name": "Personal Contacts",
+      "item": [
+        {
+          "name": "List own contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts?limit=20",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent."
+          }
+        },
+        {
+          "name": "Save contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+12025550123\",\n  \"local_label\": \"Example contact\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.environment.set(\"contact_id\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Match exact contacts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts/match",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contacts\": [\n    {\n      \"phone\": \"2025550123\",\n      \"country\": \"US\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Read own contact",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts/{{contact_id}}",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent."
+          }
+        },
+        {
+          "name": "Update private label",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts/{{contact_id}}",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"local_label\": \"Example private label\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove own contact",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/contacts/{{contact_id}}",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent."
+          }
+        },
+        {
+          "name": "Disable contact discoverability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/users/me/privacy",
+            "description": "Private owner-scoped contact operation. Fictional example number; no SMS is sent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discoverable\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Personal direct chat",
+      "item": [
+        {
+          "name": "Open owned saved contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{gateway_base_url}}/api/v1/conversations/personal/direct",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"contact_id\":\"{{contact_id}}\"}"
+            },
+            "description": "Personal token required. Saved contact eligibility is revalidated; do not supply user/member IDs."
           }
         }
       ]

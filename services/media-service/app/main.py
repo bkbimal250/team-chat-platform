@@ -229,3 +229,9 @@ async def delete(
 ):
     await service().delete(principal, media_id, http_request.headers.get("X-Correlation-ID", ""))
     return {"status": "deleted"}
+
+def register_photos():
+    from app.profile_photos import router
+    app.include_router(router)
+
+register_photos()

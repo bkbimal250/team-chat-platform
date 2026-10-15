@@ -17,6 +17,18 @@ class MemberViewSet(ResourceViewSet):
     search_fields = ["display_name", "employee_code"]
     permission_actions = {"roles": "role.manage"}
 
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                "role_assignments__role",
+                "team_memberships__team",
+                "branch_memberships__branch",
+                "accepted_invitations",
+            )
+        )
+
     @extend_schema(request=RoleAssignmentInput, responses=MemberSerializer)
     @action(detail=True, methods=["post"])
     def roles(self, request, pk=None):

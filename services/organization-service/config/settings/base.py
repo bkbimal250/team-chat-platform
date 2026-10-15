@@ -130,3 +130,6 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
     "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
 }
+
+INVITATION_TTL_HOURS = int(os.getenv("INVITATION_TTL_HOURS", "48"))
+WEB_APP_BASE_URL = os.getenv("WEB_APP_BASE_URL", "http://localhost:3001")
