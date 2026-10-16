@@ -73,7 +73,7 @@ services:
 
   organization-service:
     <<: *restart
-    build: ../../services/organization-service
+    image: ghcr.io/bkbimal250/organization-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       <<: [*db-url-sync, *rabbit, *internal-token, *jwt-public]
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_organization_db
@@ -100,7 +100,7 @@ services:
 
   organization-outbox:
     <<: *restart
-    build: ../../services/organization-service
+    image: ghcr.io/bkbimal250/organization-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "manage.py", "publish_outbox"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_organization_db
@@ -115,7 +115,7 @@ services:
 
   identity-service:
     <<: *restart
-    build: ../../services/identity-service
+    image: ghcr.io/bkbimal250/identity-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
@@ -147,7 +147,7 @@ services:
 
   identity-outbox:
     <<: *restart
-    build: ../../services/identity-service
+    image: ghcr.io/bkbimal250/identity-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.events.run_worker"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
@@ -159,7 +159,7 @@ services:
 
   identity-consumer:
     <<: *restart
-    build: ../../services/identity-service
+    image: ghcr.io/bkbimal250/identity-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_identity_db
@@ -171,7 +171,7 @@ services:
 
   user-service:
     <<: *restart
-    build: ../../services/user-service
+    image: ghcr.io/bkbimal250/user-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
@@ -196,7 +196,7 @@ services:
 
   user-outbox:
     <<: *restart
-    build: ../../services/user-service
+    image: ghcr.io/bkbimal250/user-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.outbox_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
@@ -208,7 +208,7 @@ services:
 
   user-consumer:
     <<: *restart
-    build: ../../services/user-service
+    image: ghcr.io/bkbimal250/user-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_user_db
@@ -219,7 +219,7 @@ services:
 
   conversation-service:
     <<: *restart
-    build: ../../services/conversation-service
+    image: ghcr.io/bkbimal250/conversation-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_conversation_db
@@ -248,7 +248,7 @@ services:
 
   conversation-outbox:
     <<: *restart
-    build: ../../services/conversation-service
+    image: ghcr.io/bkbimal250/conversation-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.outbox_runner"]
     environment:
       APP_ENV: production
@@ -265,7 +265,7 @@ services:
 
   conversation-consumer:
     <<: *restart
-    build: ../../services/conversation-service
+    image: ghcr.io/bkbimal250/conversation-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       APP_ENV: production
@@ -277,7 +277,7 @@ services:
 
   messaging-service:
     <<: *restart
-    build: ../../services/messaging-service
+    image: ghcr.io/bkbimal250/messaging-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
       <<: [*rabbit, *internal-token, *jwt-public]
@@ -299,7 +299,7 @@ services:
 
   messaging-outbox:
     <<: *restart
-    build: ../../services/messaging-service
+    image: ghcr.io/bkbimal250/messaging-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.outbox_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
@@ -310,7 +310,7 @@ services:
 
   messaging-consumer:
     <<: *restart
-    build: ../../services/messaging-service
+    image: ghcr.io/bkbimal250/messaging-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_message_db
@@ -321,7 +321,7 @@ services:
 
   media-service:
     <<: *restart
-    build: ../../services/media-service
+    image: ghcr.io/bkbimal250/media-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       APP_ENV: production
       MEDIA_STORAGE_BACKEND: s3
@@ -353,7 +353,7 @@ services:
 
   media-outbox:
     <<: *restart
-    build: ../../services/media-service
+    image: ghcr.io/bkbimal250/media-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.outbox_runner"]
     environment:
       APP_ENV: production
@@ -370,7 +370,7 @@ services:
 
   media-consumer:
     <<: *restart
-    build: ../../services/media-service
+    image: ghcr.io/bkbimal250/media-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       APP_ENV: production
@@ -387,7 +387,7 @@ services:
 
   notification-api:
     <<: *restart
-    build: ../../services/notification-service
+    image: ghcr.io/bkbimal250/notification-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8006"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
@@ -408,7 +408,7 @@ services:
 
   notification-consumer:
     <<: *restart
-    build: ../../services/notification-service
+    image: ghcr.io/bkbimal250/notification-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
@@ -419,7 +419,7 @@ services:
 
   notification-delivery:
     <<: *restart
-    build: ../../services/notification-service
+    image: ghcr.io/bkbimal250/notification-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.delivery_worker"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/teamchat_notification_db
@@ -430,7 +430,7 @@ services:
 
   realtime-api:
     <<: *restart
-    build: ../../services/realtime-service
+    image: ghcr.io/bkbimal250/realtime-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8007"]
     environment:
       REDIS_URL: redis://redis:6379/0
@@ -453,7 +453,7 @@ services:
 
   realtime-consumer:
     <<: *restart
-    build: ../../services/realtime-service
+    image: ghcr.io/bkbimal250/realtime-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     command: ["python", "-m", "app.consumer_runner"]
     environment:
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/organization
@@ -466,7 +466,7 @@ services:
 
   gateway-service:
     <<: *restart
-    build: ../../services/gateway-service
+    image: ghcr.io/bkbimal250/gateway-service:${IMAGE_TAG:?Set IMAGE_TAG to a published commit SHA}
     environment:
       APP_ENV: production
       ORGANIZATION_URL: http://organization-service:8000
