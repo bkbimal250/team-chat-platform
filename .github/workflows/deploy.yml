@@ -1,0 +1,91 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - conversation-service
+          - gateway-service
+          - identity-service
+          - media-service
+          - messaging-service
+          - notification-service
+          - organization-service
+          - realtime-service
+          - user-service
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/${{ matrix.service }}
+          push: true
+          tags: ghcr.io/bkbimal250/${{ matrix.service }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/bkbimal250/team-chat-platform
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy:
+    name: Deploy to Hostinger VPS (disabled pending approval)
+    if: ${{ false }}
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy the verified commit
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          key_file="$(mktemp)"
+          known_hosts_file="$(mktemp)"
+          trap 'rm -f "$key_file" "$known_hosts_file"' EXIT
+          chmod 600 "$key_file" "$known_hosts_file"
+          printf '%s\n' "$VPS_SSH_KEY" > "$key_file"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$known_hosts_file"
+          printf -v remote_user '%q' "$GHCR_PULL_USERNAME"
+          ssh_options=(-i "$key_file" -p "${VPS_SSH_PORT:-22}" -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts_file")
+          printf '%s' "$GHCR_PULL_TOKEN" |
+            ssh -T "${ssh_options[@]}" "$VPS_USER@$VPS_HOST" \
+              "docker login ghcr.io --username $remote_user --password-stdin &&
+               cd /opt/michat/deploy/hostinger &&
+               IMAGE_TAG=$GITHUB_SHA docker compose --env-file .env -f docker-compose.yml pull &&
+               IMAGE_TAG=$GITHUB_SHA docker compose --env-file .env -f docker-compose.yml up -d --no-build &&
+               IMAGE_TAG=$GITHUB_SHA docker compose --env-file .env -f docker-compose.yml ps"
