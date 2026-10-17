@@ -9,14 +9,21 @@ branch_labels = depends_on = None
 
 
 def upgrade():
-    op.add_column(
-        "messages",
-        sa.Column("forward_from_message_id", sa.UUID(), nullable=True),
-    )
-    op.add_column(
-        "messages",
-        sa.Column("forward_from_conversation_id", sa.UUID(), nullable=True),
-    )
+    # 0001 applies current metadata on a fresh database.
+    inspector = sa.inspect(op.get_bind())
+    message_columns = {column["name"] for column in inspector.get_columns("messages")}
+    if "forward_from_message_id" not in message_columns:
+        op.add_column(
+            "messages",
+            sa.Column("forward_from_message_id", sa.UUID(), nullable=True),
+        )
+    if "forward_from_conversation_id" not in message_columns:
+        op.add_column(
+            "messages",
+            sa.Column("forward_from_conversation_id", sa.UUID(), nullable=True),
+        )
+    if inspector.has_table("organization_member_projections"):
+        return
     op.create_table(
         "organization_member_projections",
         sa.Column("id", sa.UUID(), nullable=False),

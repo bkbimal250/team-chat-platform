@@ -12,6 +12,9 @@ depends_on = None
 
 
 def upgrade():
+    # 0001 applies current metadata on a fresh database.
+    if sa.inspect(op.get_bind()).has_table("device_e2ee_bundles"):
+        return
     op.create_table(
         "device_e2ee_bundles",
         sa.Column("device_id", postgresql.UUID(as_uuid=True), nullable=False),

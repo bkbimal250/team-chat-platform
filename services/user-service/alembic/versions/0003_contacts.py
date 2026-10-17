@@ -12,10 +12,16 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column(
-        "user_privacy_settings",
-        sa.Column("discoverable", sa.Boolean(), nullable=False, server_default=sa.true()),
-    )
+    # 0001 applies current metadata on a fresh database.
+    inspector = sa.inspect(op.get_bind())
+    privacy_columns = {column["name"] for column in inspector.get_columns("user_privacy_settings")}
+    if "discoverable" not in privacy_columns:
+        op.add_column(
+            "user_privacy_settings",
+            sa.Column("discoverable", sa.Boolean(), nullable=False, server_default=sa.true()),
+        )
+    if inspector.has_table("contacts"):
+        return
     op.create_table(
         "contacts",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
