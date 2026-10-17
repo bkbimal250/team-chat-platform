@@ -12,9 +12,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "identities", sa.Column("email_verified_at", sa.DateTime(timezone=True), nullable=True)
-    )
+    # 0001 applies current metadata on a fresh database.
+    inspector = sa.inspect(op.get_bind())
+    if "email_verified_at" not in {column["name"] for column in inspector.get_columns("identities")}:
+        op.add_column(
+            "identities", sa.Column("email_verified_at", sa.DateTime(timezone=True), nullable=True)
+        )
+    if inspector.has_table("email_verification_challenges"):
+        return
     op.create_table(
         "email_verification_challenges",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),

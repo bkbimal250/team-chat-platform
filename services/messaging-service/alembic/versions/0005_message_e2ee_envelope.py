@@ -11,7 +11,10 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("messages", sa.Column("e2ee_envelope", JSONB, nullable=True))
+    # 0001 applies current metadata on a fresh database.
+    columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("messages")}
+    if "e2ee_envelope" not in columns:
+        op.add_column("messages", sa.Column("e2ee_envelope", JSONB, nullable=True))
 
 
 def downgrade():

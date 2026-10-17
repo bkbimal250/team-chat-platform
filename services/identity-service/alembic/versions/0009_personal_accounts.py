@@ -12,11 +12,18 @@ depends_on = None
 
 
 def upgrade():
+    # 0001 applies current metadata on a fresh database.
+    inspector = sa.inspect(op.get_bind())
     op.alter_column("sessions", "organization_id", nullable=True)
     op.alter_column("sessions", "member_id", nullable=True)
-    op.create_check_constraint(
-        "session_context_pair", "sessions", "(organization_id IS NULL) = (member_id IS NULL)"
-    )
+    if "session_context_pair" not in {
+        item["name"] for item in inspector.get_check_constraints("sessions")
+    }:
+        op.create_check_constraint(
+            "session_context_pair", "sessions", "(organization_id IS NULL) = (member_id IS NULL)"
+        )
+    if inspector.has_table("personal_registrations"):
+        return
     op.create_table(
         "personal_registrations",
         sa.Column(

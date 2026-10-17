@@ -10,9 +10,11 @@ branch_labels = depends_on = None
 
 
 def upgrade():
-    op.add_column("contacts", sa.Column("given_name", sa.String(100), nullable=True))
-    op.add_column("contacts", sa.Column("family_name", sa.String(100), nullable=True))
-    op.add_column("contacts", sa.Column("phone_display", sa.String(40), nullable=True))
+    # 0001 applies current metadata on a fresh database.
+    existing = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("contacts")}
+    for name, length in (("given_name", 100), ("family_name", 100), ("phone_display", 40)):
+        if name not in existing:
+            op.add_column("contacts", sa.Column(name, sa.String(length), nullable=True))
 
 
 def downgrade():

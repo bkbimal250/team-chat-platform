@@ -12,6 +12,9 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # 0001 applies current metadata on a fresh database, so this table may exist.
+    if sa.inspect(op.get_bind()).has_table("password_reset_challenges"):
+        return
     op.create_table(
         "password_reset_challenges",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
